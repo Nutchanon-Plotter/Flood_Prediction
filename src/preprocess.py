@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 # --- 1. Load Data ---
-df = pd.read_csv('../data/raw/raw_data.csv')
+df = pd.read_csv('data/raw/raw_data.csv')
 
 # Convert 'date' to datetime and set as index for time-series operations
 df['date'] = pd.to_datetime(df['date'])
@@ -100,10 +100,10 @@ X_train_scaled_df = pd.DataFrame(X_train_scaled, columns=features, index=X_train
 X_test_scaled_df = pd.DataFrame(X_test_scaled, columns=features, index=X_test.index)
 
 # --- 5. Save Artifacts (ใช้ชื่อไฟล์ Multiclass) ---
-X_train_scaled_df.to_csv('../data/preprocess_data/X_train_scaled.csv')
-X_test_scaled_df.to_csv('../data/preprocess_data/X_test_scaled.csv')
-y_train.to_csv('../data/preprocess_data/y_train.csv')
-y_test.to_csv('../data/preprocess_data/y_test.csv')
+X_train_scaled_df.to_csv('data/preprocess_data/X_train_scaled.csv')
+X_test_scaled_df.to_csv('data/preprocess_data/X_test_scaled.csv')
+y_train.to_csv('data/preprocess_data/y_train.csv')
+y_test.to_csv('data/preprocess_data/y_test.csv')
 
 print("\n--- 🏁 Train/Test Split และ Scaling สำหรับ Multiclass เสร็จสมบูรณ์ ---")
 print(f"จำนวนแถวข้อมูลรวม: {len(df_final)} แถว")

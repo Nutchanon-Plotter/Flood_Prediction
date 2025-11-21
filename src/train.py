@@ -19,7 +19,7 @@ def calculate_multiclass_weights():
     # --- 1. Load Data Artifacts ---
     try:
         # Load Target Multiclass
-        y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
+        y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
         print("✅ โหลดไฟล์ y_train.csv สำเร็จ")
     except FileNotFoundError:
         print("❌ Error: ไม่พบไฟล์ y_train.csv")
@@ -46,8 +46,8 @@ def calculate_multiclass_weights():
     return multiclass_weights
    
 def feature_selection():
-    y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
-    X_train_scaled_df = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
+    y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
+    X_train_scaled_df = pd.read_csv('data/preprocess_data/X_train_scaled.csv', index_col=0)
     multiclass_weights = calculate_multiclass_weights()
     sample_weights = y_train.map(multiclass_weights)
 
@@ -73,10 +73,10 @@ def feature_selection():
 
 def Load_processed_data():
     selected_features = feature_selection()
-    X_train_scale = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
-    X_test_scale = pd.read_csv('../data/preprocess_data/X_test_scaled.csv', index_col=0)
-    y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
-    y_test = pd.read_csv('../data/preprocess_data/y_test.csv', index_col=0).squeeze()
+    X_train_scale = pd.read_csv('data/preprocess_data/X_train_scaled.csv', index_col=0)
+    X_test_scale = pd.read_csv('data/preprocess_data/X_test_scaled.csv', index_col=0)
+    y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
+    y_test = pd.read_csv('data/preprocess_data/y_test.csv', index_col=0).squeeze()
     X_train = X_train_scale[selected_features]
     X_test = X_test_scale[selected_features]
     return X_train, X_test, y_train, y_test
@@ -175,7 +175,7 @@ def train():
                                   objective='multi:softprob', num_class=num_classes)
 
     # 4. MLflow Setup
-    dagshub_uri = "https://dagshub.com/plotter.natchanon/Loan_Defualt_Prediction/mlflow"
+    dagshub_uri = "https://dagshub.com/plotter.natchanon/Flood_Prediction.mlflow"
     mlflow.set_tracking_uri(dagshub_uri)
     mlflow.set_experiment("Flood_Prediction_Project")
     

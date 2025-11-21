@@ -14,6 +14,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 import joblib
 from mlflow.tracking import MlflowClient
+import shutil
 
 # ... (ฟังก์ชัน calculate_multiclass_weights, feature_selection, Load_processed_data เหมือนเดิม) ...
 # ... (ขอข้ามเพื่อความกระชับ ให้ใช้โค้ดเดิมของคุณในส่วนบน) ...
@@ -98,6 +99,15 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
             if isinstance(metrics, dict) and 'f1-score' in metrics:
                 mlflow.log_metric(f"test_{cls}_f1_score", metrics['f1-score'])
 
+        # --- [CRITICAL UPDATE] Log Scaler to MLflow ---
+        scaler_path = 'data/preprocess_data/scaler.pkl'
+        if os.path.exists(scaler_path):
+            print(f"📦 Logging scaler artifact from {scaler_path}")
+            # log_artifact จะส่งไฟล์ขึ้นไปเก็บคู่กับ Model บน Server
+            mlflow.log_artifact(scaler_path, artifact_path="model")
+        else:
+            print(f"⚠️ Warning: Scaler file not found at {scaler_path}")
+
         # 4. Log Model as Artifact
         if model_name == "XGBoost":
             mlflow.xgboost.log_model(best_model, "model")
@@ -110,9 +120,13 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
 
         model_filename = f"models/{model_name}_best_model"
         if model_name == "XGBoost":
-             best_model.save_model(f"{model_filename}.json")
+            best_model.save_model(f"{model_filename}.json")
         else:
-             joblib.dump(best_model, f"{model_filename}.pkl") # <--- บรรทัดนี้ที่เคย Error
+            joblib.dump(best_model, f"{model_filename}.pkl") # <--- บรรทัดนี้ที่เคย Error
+
+        if os.path.exists(scaler_path):
+            shutil.copy(scaler_path, "models/scaler.pkl")
+            print(f"✅ Scaler copied to models/scaler.pkl")
 
         print(f"Model logged to MLflow Run ID: {run.info.run_id}")
         

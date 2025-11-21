@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import os  # <--- 1. เพิ่ม import os
+import joblib
 
 def process_and_split_data():
     # -------------------------------------------------------------------------
@@ -35,11 +36,11 @@ def process_and_split_data():
     # --- 2. Separate DataFrames ---
     # ตรวจสอบว่ามีข้อมูลตาม location ที่ต้องการหรือไม่
     if 'location' not in df.columns:
-         # กรณีข้อมูลอาจจะถูก filter มาแล้ว หรือไม่มี column นี้ ให้ข้ามหรือ handle error
-         print("⚠️ Warning: 'location' column not found. Assuming data is ready or single location.")
-         # ตรงนี้ต้องระวัง ถ้า data raw ไม่มี location logic นี้จะพัง
-         # แต่สมมติว่า format ตรงกับ data_loader ที่ให้ไปก่อนหน้า
-         pass
+        # กรณีข้อมูลอาจจะถูก filter มาแล้ว หรือไม่มี column นี้ ให้ข้ามหรือ handle error
+        print("⚠️ Warning: 'location' column not found. Assuming data is ready or single location.")
+        # ตรงนี้ต้องระวัง ถ้า data raw ไม่มี location logic นี้จะพัง
+        # แต่สมมติว่า format ตรงกับ data_loader ที่ให้ไปก่อนหน้า
+        pass
 
     df_target = df[df['location'] == 'ChaoPhraya_Dam'].copy()
     df_upstream = df[df['location'] == 'NakhonSawan_Muang_Upstream'].copy()
@@ -47,7 +48,7 @@ def process_and_split_data():
     if df_target.empty or df_upstream.empty:
         print(f"❌ Error: Data for target or upstream location is empty.")
         print(f"   Target rows: {len(df_target)}, Upstream rows: {len(df_upstream)}")
-        # อาจจะ return หรือ exit ถ้าข้อมูลไม่ครบ
+        exit()# อาจจะ return หรือ exit ถ้าข้อมูลไม่ครบ
     
     # --- 3. Feature Engineering: Time-Lagged (C.2 Discharge) ---
     lag_features = ['river_discharge']
@@ -122,11 +123,14 @@ def process_and_split_data():
 
     # --- 5. Save Artifacts (ใช้ Absolute Path) ---
     print(f"\n💾 Saving processed data to: {output_dir}")
-    
     X_train_scaled_df.to_csv(os.path.join(output_dir, 'X_train_scaled.csv'))
     X_test_scaled_df.to_csv(os.path.join(output_dir, 'X_test_scaled.csv'))
     y_train.to_csv(os.path.join(output_dir, 'y_train.csv'))
     y_test.to_csv(os.path.join(output_dir, 'y_test.csv'))
+    # --- [CRITICAL] Save Scaler ---
+    scaler_path = os.path.join(output_dir, 'scaler.pkl')
+    joblib.dump(scaler, scaler_path) # <--- This is what you were missing!
+    print(f"✅ Scaler saved to: {scaler_path}")
 
     print("\n--- 🏁 Train/Test Split และ Scaling เสร็จสมบูรณ์ ---")
     print(f"Train set: {len(X_train)} แถว")

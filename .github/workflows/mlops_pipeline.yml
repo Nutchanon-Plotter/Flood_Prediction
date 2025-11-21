@@ -26,8 +26,8 @@ jobs:
       run: |
         pip install pandas numpy xgboost scikit-learn joblib openmeteo-requests requests-cache retry-requests evidently
 
-    - name: Fetch Latest Data
-      run: python src/data_loader.py
+    # - name: Fetch Latest Data
+    #   run: python src/data_loader.py
 
     # - name: Check for Data Drift
     #   id: drift_check

@@ -36,11 +36,7 @@
 CPE393_Final_Project/
 │
 ├── .github/workflows/
-│   └── smart_pipeline.yml   # GitHub Actions Workflow (Drift Check -> Retrain -> Predict)
-│
-├── api/
-│   ├── Dockerfile           # Docker setup for API
-│   └── main.py              # FastAPI Backend
+│   └── mlops_pipeline.yml   # GitHub Actions Workflow (Drift Check -> Retrain -> Predict)
 │
 ├── data/                    # Data storage (Ignored by Git)
 ├── models/                  # Artifacts (model.json, scaler.pkl, drift_reports)

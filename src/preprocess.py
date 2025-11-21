@@ -1,117 +1,146 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import os  # <--- 1. เพิ่ม import os
 
-# --- 1. Load Data ---
-df = pd.read_csv('data/raw/raw_data.csv')
+def process_and_split_data():
+    # -------------------------------------------------------------------------
+    # Setup Paths (จัดการ Path ให้ทำงานได้ทุกที่ ทั้ง Local และ GitHub Actions)
+    # -------------------------------------------------------------------------
+    # หาตำแหน่งไฟล์ script ปัจจุบัน (เช่น /project/src/preprocess.py)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # ถอยกลับไปหา Project Root (เช่น /project/)
+    project_root = os.path.dirname(current_dir)
+    
+    # กำหนด Path ของไฟล์ Input และ Output Directory
+    input_file_path = os.path.join(project_root, 'data', 'raw', 'raw_data.csv')
+    output_dir = os.path.join(project_root, 'data', 'preprocess_data')
+    
+    # สร้างโฟลเดอร์ Output ถ้ายังไม่มี (สำคัญมาก!)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    print(f"📂 Loading data from: {input_file_path}")
 
-# Convert 'date' to datetime and set as index for time-series operations
-df['date'] = pd.to_datetime(df['date'])
-df = df.set_index('date')
+    # --- 1. Load Data ---
+    if not os.path.exists(input_file_path):
+        raise FileNotFoundError(f"❌ ไม่พบไฟล์ข้อมูลดิบที่: {input_file_path}")
 
-# --- 2. Separate DataFrames ---
-df_target = df[df['location'] == 'ChaoPhraya_Dam'].copy()
-df_upstream = df[df['location'] == 'NakhonSawan_Muang_Upstream'].copy()
+    df = pd.read_csv(input_file_path)
 
-# --- 3. Feature Engineering: Time-Lagged (C.2 Discharge) ---
-lag_features = ['river_discharge']
-lag_days = [1, 2]
+    # Convert 'date' to datetime and set as index for time-series operations
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
 
-df_upstream_predictors = df_upstream[lag_features].rename(columns={'river_discharge': 'C2_discharge'})
+    # --- 2. Separate DataFrames ---
+    # ตรวจสอบว่ามีข้อมูลตาม location ที่ต้องการหรือไม่
+    if 'location' not in df.columns:
+         # กรณีข้อมูลอาจจะถูก filter มาแล้ว หรือไม่มี column นี้ ให้ข้ามหรือ handle error
+         print("⚠️ Warning: 'location' column not found. Assuming data is ready or single location.")
+         # ตรงนี้ต้องระวัง ถ้า data raw ไม่มี location logic นี้จะพัง
+         # แต่สมมติว่า format ตรงกับ data_loader ที่ให้ไปก่อนหน้า
+         pass
 
-for lag in lag_days:
-    lagged_data = df_upstream_predictors.shift(periods=lag)
-    lagged_data = lagged_data.rename(columns={'C2_discharge': f'C2_discharge_lag{lag}'})
-    df_target = df_target.merge(lagged_data, left_index=True, right_index=True, how='left')
+    df_target = df[df['location'] == 'ChaoPhraya_Dam'].copy()
+    df_upstream = df[df['location'] == 'NakhonSawan_Muang_Upstream'].copy()
+    
+    if df_target.empty or df_upstream.empty:
+        print(f"❌ Error: Data for target or upstream location is empty.")
+        print(f"   Target rows: {len(df_target)}, Upstream rows: {len(df_upstream)}")
+        # อาจจะ return หรือ exit ถ้าข้อมูลไม่ครบ
+    
+    # --- 3. Feature Engineering: Time-Lagged (C.2 Discharge) ---
+    lag_features = ['river_discharge']
+    lag_days = [1, 2]
 
-# --- 4. Feature Engineering: Rolling Window & Temporal ---
-df_target['precip_rolling_7d'] = df_target['precipitation_sum'].rolling(window=7).sum()
-df_target['precip_rolling_15d'] = df_target['precipitation_sum'].rolling(window=15).sum()
-df_target['soil_moisture_rolling_7d_avg'] = df_target['soil_moisture_0_to_100cm_mean'].rolling(window=7).mean()
-df_target['month'] = df_target.index.month
+    df_upstream_predictors = df_upstream[lag_features].rename(columns={'river_discharge': 'C2_discharge'})
 
-# --- 5. Create Multiclass Target Variable (y) ---
-threshold_risk = 2100.0   # เกณฑ์สำหรับ medium Risk
-threshold_flood = 2700.0  # เกณฑ์สำหรับ high risk
+    for lag in lag_days:
+        lagged_data = df_upstream_predictors.shift(periods=lag)
+        lagged_data = lagged_data.rename(columns={'C2_discharge': f'C2_discharge_lag{lag}'})
+        # Join โดยใช้ Index (Date)
+        df_target = df_target.merge(lagged_data, left_index=True, right_index=True, how='left')
 
-conditions = [
-    (df_target['river_discharge'] >= threshold_flood),  # Class 2: Flood (>= 2700)
-    (df_target['river_discharge'] >= threshold_risk) & (df_target['river_discharge'] < threshold_flood) # Class 1: Risk (2100 <= Discharge < 2700)
-]
-choices = [2, 1]  # 2 = high risk, 1 = medium risk (Default 0 = Normal)
+    # --- 4. Feature Engineering: Rolling Window & Temporal ---
+    df_target['precip_rolling_7d'] = df_target['precipitation_sum'].rolling(window=7).sum()
+    df_target['precip_rolling_15d'] = df_target['precipitation_sum'].rolling(window=15).sum()
+    df_target['soil_moisture_rolling_7d_avg'] = df_target['soil_moisture_0_to_100cm_mean'].rolling(window=7).mean()
+    df_target['month'] = df_target.index.month
 
-df_target['flood_multiclass'] = np.select(conditions, choices, default=0)
+    # --- 5. Create Multiclass Target Variable (y) ---
+    threshold_risk = 2100.0   # เกณฑ์สำหรับ medium Risk
+    threshold_flood = 2700.0  # เกณฑ์สำหรับ high risk
 
-# --- 6. Final Cleaning และ Save ---
-df_target = df_target.drop(columns=['location'])
+    conditions = [
+        (df_target['river_discharge'] >= threshold_flood),  # Class 2: Flood
+        (df_target['river_discharge'] >= threshold_risk) & (df_target['river_discharge'] < threshold_flood) # Class 1: Risk
+    ]
+    choices = [2, 1]  # 2 = High Risk, 1 = Medium Risk (Default 0 = Normal)
 
-# ลบคอลัมน์ 'flood' (Binary) ที่ไม่ได้ใช้แล้วหากมี
-if 'flood' in df_target.columns:
-    df_target = df_target.drop(columns=['flood'])
+    df_target['flood_multiclass'] = np.select(conditions, choices, default=0)
 
-# ลบแถวที่มีค่า NaN (จาก Lag/Rolling)
-df_final_all_features_multiclass = df_target.dropna().copy()
+    # --- 6. Final Cleaning ---
+    if 'location' in df_target.columns:
+        df_target = df_target.drop(columns=['location'])
 
-# Save the final Multiclass DataFrame
-# df_final_all_features_multiclass.to_csv('df_final_all_features_multiclass.csv')
+    # ลบคอลัมน์ 'flood' (Binary) เดิมทิ้ง
+    if 'flood' in df_target.columns:
+        df_target = df_target.drop(columns=['flood'])
 
-print("--- 🏁 สรุปการสร้าง Features Multiclass ---")
-print(f"จำนวนคอลัมน์รวม: {len(df_final_all_features_multiclass.columns)} คอลัมน์")
-print(f"จำนวนแถวข้อมูลที่พร้อมใช้งาน: {len(df_final_all_features_multiclass)} แถว")
-# print("DataFrame ถูกบันทึกเป็นไฟล์ 'df_final_all_features_multiclass.csv' เรียบร้อยแล้ว")
+    # ลบแถวที่มีค่า NaN (จาก Lag/Rolling)
+    df_final = df_target.dropna().copy()
 
-# ----------------------------------------------------------------------
-#split_train_test_multiclass.py
-# ----------------------------------------------------------------------
+    print("--- 🏁 สรุปการสร้าง Features Multiclass ---")
+    print(f"จำนวนคอลัมน์รวม: {len(df_final.columns)}")
+    print(f"จำนวนแถวข้อมูลที่พร้อมใช้งาน: {len(df_final)}")
 
-# --- 1. Load Data Artifacts (Multiclass File) ---
-# ต้องโหลดไฟล์ multiclass ที่สร้างล่าสุด
-# try:
-#     df_final = pd.read_csv('df_final_all_features_multiclass.csv', index_col='date', parse_dates=True)
-#     print("โหลดไฟล์ Multiclass สำเร็จ")
-# except FileNotFoundError:
-#     print("Error: ไม่พบไฟล์ 'df_final_all_features_multiclass.csv'")
-#     print("โปรดตรวจสอบว่าได้รันโค้ด Preprocessing ขั้นตอนสุดท้ายเพื่อสร้างไฟล์นี้แล้ว")
-#     exit()
-df_final = df_final_all_features_multiclass.copy()
+    # ----------------------------------------------------------------------
+    # Split Train/Test & Save Artifacts
+    # ----------------------------------------------------------------------
 
-# --- 2. Define X (Features) and y (Target) ---
-# X: คอลัมน์ทั้งหมด ยกเว้น 'river_discharge' และ 'flood_multiclass' (Target ใหม่)
-features = [col for col in df_final.columns if col not in ['river_discharge', 'flood_multiclass']]
-X = df_final[features]
+    # --- 2. Define X (Features) and y (Target) ---
+    # X: คอลัมน์ทั้งหมด ยกเว้น 'river_discharge' (ค่าจริงของ target) และ 'flood_multiclass' (label)
+    features = [col for col in df_final.columns if col not in ['river_discharge', 'flood_multiclass']]
+    X = df_final[features]
+    y = df_final['flood_multiclass']
 
-# y: คอลัมน์ Target Multiclass
-y = df_final['flood_multiclass']
+    # --- 3. Time-Series Split (80% Train, 20% Test) ---
+    split_ratio = 0.8
+    split_index = int(len(X) * split_ratio)
 
-# --- 3. Time-Series Split (80% Train, 20% Test) ---
-split_ratio = 0.8
-split_index = int(len(X) * split_ratio)
+    X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
+    y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
 
-X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
-y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
+    # --- 4. Feature Scaling (StandardScaler) ---
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
-# --- 4. Feature Scaling (StandardScaler) ---
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+    # Convert back to DataFrame
+    X_train_scaled_df = pd.DataFrame(X_train_scaled, columns=features, index=X_train.index)
+    X_test_scaled_df = pd.DataFrame(X_test_scaled, columns=features, index=X_test.index)
 
-# Convert back to DataFrame
-X_train_scaled_df = pd.DataFrame(X_train_scaled, columns=features, index=X_train.index)
-X_test_scaled_df = pd.DataFrame(X_test_scaled, columns=features, index=X_test.index)
+    # --- 5. Save Artifacts (ใช้ Absolute Path) ---
+    print(f"\n💾 Saving processed data to: {output_dir}")
+    
+    X_train_scaled_df.to_csv(os.path.join(output_dir, 'X_train_scaled.csv'))
+    X_test_scaled_df.to_csv(os.path.join(output_dir, 'X_test_scaled.csv'))
+    y_train.to_csv(os.path.join(output_dir, 'y_train.csv'))
+    y_test.to_csv(os.path.join(output_dir, 'y_test.csv'))
 
-# --- 5. Save Artifacts (ใช้ชื่อไฟล์ Multiclass) ---
-X_train_scaled_df.to_csv('data/preprocess_data/X_train_scaled.csv')
-X_test_scaled_df.to_csv('data/preprocess_data/X_test_scaled.csv')
-y_train.to_csv('data/preprocess_data/y_train.csv')
-y_test.to_csv('data/preprocess_data/y_test.csv')
+    print("\n--- 🏁 Train/Test Split และ Scaling เสร็จสมบูรณ์ ---")
+    print(f"Train set: {len(X_train)} แถว")
+    print(f"Test set:  {len(X_test)} แถว")
 
-print("\n--- 🏁 Train/Test Split และ Scaling สำหรับ Multiclass เสร็จสมบูรณ์ ---")
-print(f"จำนวนแถวข้อมูลรวม: {len(df_final)} แถว")
-print(f"Train set: {len(X_train)} แถว ({X_train.index.min().strftime('%Y-%m-%d')} ถึง {X_train.index.max().strftime('%Y-%m-%d')})")
-print(f"Test set:  {len(X_test)} แถว ({X_test.index.min().strftime('%Y-%m-%d')} ถึง {X_test.index.max().strftime('%Y-%m-%d')})")
+    print("\n📊 Class Distribution ในชุด Train:")
+    # แสดงสัดส่วน Multiclass ในชุด Train (ถ้ามี class ครบ)
+    # ใช้ map เพื่อความปลอดภัยกรณี class ไม่ครบ
+    label_map = {0: 'Normal', 1: 'Risk', 2: 'Flood'}
+    dist = y_train.value_counts().sort_index()
+    dist.index = dist.index.map(label_map)
+    print(dist)
 
-print("\n📊 Class Distribution ในชุด Train:")
-# แสดงสัดส่วน Multiclass ในชุด Train
-print(y_train.value_counts().rename({0: 'Normal', 1: 'Risk', 2: 'Flood'}, inplace=False))
+    print("\n✅ Saved 4 CSV files successfully.")
 
-print("\nไฟล์ CSV 4 ไฟล์ Multiclass (Artifacts) ถูกบันทึกเรียบร้อยแล้ว")
+if __name__ == "__main__":
+    process_and_split_data()

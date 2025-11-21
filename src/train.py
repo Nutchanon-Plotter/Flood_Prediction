@@ -130,8 +130,14 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
         mlflow.log_metric("test_f1_weighted", f1_weighted)
         
         for cls, metrics in report.items():
+            # เช็คว่าเป็น dict และมี key 'f1-score' หรือไม่ (ป้องกัน error ที่ key 'accuracy')
             if isinstance(metrics, dict):
-                mlflow.log_metric(f"test_{cls}_f1_score", metrics['f1_score'])
+                # แก้ไขจุดที่ Error: เปลี่ยน 'f1_score' เป็น 'f1-score'
+                if 'f1-score' in metrics:
+                    mlflow.log_metric(f"test_{cls}_f1_score", metrics['f1-score'])
+                else:
+                    # Fallback กรณี key ไม่ตรง (เผื่อ sklearn เปลี่ยน version ในอนาคต)
+                    print(f"Warning: 'f1-score' not found for class {cls}. Available keys: {metrics.keys()}")
 
         # 4. Log Model as Artifact
         if model_name == "XGBoost":

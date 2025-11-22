@@ -16,6 +16,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 import joblib
 from mlflow.tracking import MlflowClient
+import dagshub  # <--- [เพิ่ม] Import DagsHub
 
 # --- Helper Functions ---
 
@@ -192,9 +193,20 @@ def train():
     xgb_model_base = XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42, 
                                   objective='multi:softprob', num_class=num_classes)
 
-    # 4. MLflow Config
-    dagshub_uri = "https://dagshub.com/plotter.natchanon/Flood_Prediction.mlflow"
-    mlflow.set_tracking_uri(dagshub_uri)
+    # 4. MLflow Config (DagsHub)
+    
+    print("\n=======================================================")
+    print("🚀 Initializing DagsHub & MLflow")
+    print("=======================================================")
+    
+    # --- [ส่วนที่เพิ่ม] ใช้ dagshub.init ---
+    # ฟังก์ชันนี้จะตั้งค่า Tracking URI และ Authentication ให้เอง
+    # มันจะพยายามอ่าน Token จาก Environment Variable 'DAGSHUB_TOKEN' (ใน GitHub Actions)
+    # หรือถ้าคุณรัน local แล้ว login ไว้แล้ว มันจะใช้ค่าเหล่านั้น
+    
+    dagshub.init(repo_owner='plotter.natchanon', repo_name='Flood_Prediction', mlflow=True)
+    
+    # ตั้งชื่อ Experiment
     mlflow.set_experiment("Flood_Prediction_Project")
     
     print("\n=======================================================")
@@ -240,20 +252,15 @@ def train():
         source_ext = "json" if best_name == "XGBoost" else "pkl"
         source_path = f"models/{best_name}_best_model.{source_ext}"
         
-        # เป้าหมาย: production_model.pkl (หรือ json)
-        # เพื่อความง่าย เราจะใช้ pickle เป็น format กลาง หรือ copy นามสกุลเดิมก็ได้
-        # แต่ถ้า api/main.py ของคุณโหลดด้วย joblib มันมักจะอ่านได้หมด
         target_path = f"models/production_model.{source_ext}"
         
         if os.path.exists(source_path):
             shutil.copy(source_path, target_path)
             print(f"✅ Production model saved to: {target_path}")
             
-            # สร้าง Metadata บอกว่าโมเดลนี้คือ Algorithm อะไร
             with open("models/model_metadata.txt", "w") as f:
                 f.write(best_name)
                 
-            # บันทึกชื่อไฟล์โมเดลที่แท้จริงเพื่อให้ API รู้ว่าต้องโหลดไฟล์นามสกุลอะไร
             with open("models/model_filename.txt", "w") as f:
                 f.write(f"production_model.{source_ext}")
 

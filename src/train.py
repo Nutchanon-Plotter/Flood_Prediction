@@ -23,7 +23,7 @@ import dagshub  # <--- [เพิ่ม] Import DagsHub
 def calculate_multiclass_weights():
     # 1. Load Target Data
     try:
-        y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
+        y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
         print("✅ โหลดไฟล์ y_train.csv สำเร็จ")
     except FileNotFoundError:
         print("❌ Error: ไม่พบไฟล์ y_train.csv")
@@ -43,8 +43,8 @@ def calculate_multiclass_weights():
 def feature_selection():
     # Load Data for Selection
     try:
-        y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
-        X_train_scaled_df = pd.read_csv('data/preprocess_data/X_train_scaled.csv', index_col=0)
+        y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
+        X_train_scaled_df = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
     except FileNotFoundError:
         print("❌ Error: ไม่พบไฟล์ข้อมูลสำหรับ Feature Selection")
         return []
@@ -82,10 +82,10 @@ def Load_processed_data():
     selected_features = feature_selection()
     
     # Load full data
-    X_train_scale = pd.read_csv('data/preprocess_data/X_train_scaled.csv', index_col=0)
-    X_test_scale = pd.read_csv('data/preprocess_data/X_test_scaled.csv', index_col=0)
-    y_train = pd.read_csv('data/preprocess_data/y_train.csv', index_col=0).squeeze()
-    y_test = pd.read_csv('data/preprocess_data/y_test.csv', index_col=0).squeeze()
+    X_train_scale = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
+    X_test_scale = pd.read_csv('../data/preprocess_data/X_test_scaled.csv', index_col=0)
+    y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
+    y_test = pd.read_csv('../data/preprocess_data/y_test.csv', index_col=0).squeeze()
     
     # Filter only selected features
     if selected_features:

@@ -1,0 +1,51 @@
+[
+    {
+        "date": "2025-11-23",
+        "status_code": 1,
+        "status_text": "Risk",
+        "flood_probability": 0.8773465752601624,
+        "risk_level": "Medium"
+    },
+    {
+        "date": "2025-11-24",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.185594081878662,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-11-25",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.40615177154541,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-11-26",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.2964985370635986,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-11-27",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.2964985370635986,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-11-28",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.4179670810699463,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-11-29",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 2.4179670810699463,
+        "risk_level": "Low"
+    }
+]

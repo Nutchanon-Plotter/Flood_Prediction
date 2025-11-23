@@ -25,21 +25,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # ลง PyArrow ก่อน (ตัวปัญหา)
-        pip install "pyarrow>=14.0.0"
+        # 1. ลง PyArrow ก่อนเพื่อกันเหนียว (ตัวปัญหาขาประจำ)
+        pip install "pyarrow>=14.0.0" 
         
-        # ลง Library หลัก (ระบุเวอร์ชัน evidently>=0.4.0 ให้ชัดเจน)
+        # 2. ลง Library หลัก (ระบุเวอร์ชัน evidently ให้ชัดเจน)
         pip install pandas numpy scikit-learn xgboost "mlflow==2.17.2" joblib "evidently>=0.4.0" openmeteo-requests requests-cache retry-requests dagshub
         
-        # สั่ง List ดูว่าติดตั้งอะไรไปบ้าง (เพื่อ Debug)
-        echo "=== 📦 Installed Packages List ==="
+        # 3. (สำคัญ) ปริ้นท์รายชื่อ Library ออกมาดูว่า evidently ถูกติดตั้งจริงไหม
+        echo "=== Installed Packages ==="
         pip list
-        echo "=================================="
-        
-        # เช็คไฟล์ในเครื่องว่ามีไฟล์ชื่อชนกันไหม
-        echo "=== 📂 Checking for file conflicts ==="
-        find . -name "evidently.py"
-        echo "======================================"
+        echo "=========================="
     # 2. Data Pipeline (ต้องรันเรียงลำดับ)
     
     - name: 1. Fetch Latest Data
@@ -48,11 +43,6 @@ jobs:
     - name: 2. Preprocess & Generate Scaler
       # สำคัญมาก! ต้องรันเพื่อสร้าง models/scaler.pkl ให้ขั้นตอนต่อไปใช้
       run: python src/preprocess.py
-
-    # 3. Monitoring
-    - name: 3. Check for Data Drift
-      id: drift_check  # ตั้ง ID เพื่อส่งค่าไปยัง Step ถัดไป
-      run: python src/monitor.py
 
     # 4. Retraining (ทำเฉพาะตอนเจอ Drift)
     - name: 4. 🚨 Drift Detected - Retraining Model

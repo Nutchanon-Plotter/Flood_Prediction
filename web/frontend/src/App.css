@@ -1,0 +1,107 @@
+.cloud {
+  position: absolute;
+  opacity: 0.55;
+  animation: float 40s linear infinite;
+  pointer-events: none;
+}
+
+.c1 {
+  top: 10%;
+  left: -20%;
+  width: 200px;
+  animation-duration: 55s;
+}
+
+.c2 {
+  top: 30%;
+  left: -25%;
+  width: 250px;
+  opacity: 0.45;
+  animation-duration: 70s;
+}
+
+.c3 {
+  top: 55%;
+  left: -15%;
+  width: 180px;
+  animation-duration: 60s;
+}
+
+.c4 {
+  top: 70%;
+  left: -30%;
+  width: 220px;
+  opacity: 0.38;
+  animation-duration: 80s;
+}
+
+.c5 {
+  top: 20%;
+  left: -18%;
+  width: 150px;
+  opacity: 0.5;
+  animation-duration: 65s;
+}
+
+
+@keyframes float {
+  0% {
+    transform: translateX(0px);
+  }
+  100% {
+    transform: translateX(140vw);
+  }
+}
+
+@keyframes float-reverse {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-140vw);
+  }
+}
+
+.cloud-r {
+  position: absolute;
+  opacity: 0.55;
+  animation: float-reverse 40s linear infinite;
+  pointer-events: none;
+}
+
+.r1 {
+  top: 15%;
+  right: -20%;
+  width: 220px;
+  animation-duration: 60s;
+}
+
+.r2 {
+  top: 35%;
+  right: -25%;
+  width: 260px;
+  opacity: 0.45;
+  animation-duration: 75s;
+}
+
+.r3 {
+  top: 60%;
+  right: -15%;
+  width: 180px;
+  animation-duration: 55s;
+}
+
+.r4 {
+  top: 75%;
+  right: -30%;
+  width: 240px;
+  opacity: 0.4;
+  animation-duration: 85s;
+}
+
+.r5 {
+  top: 25%;
+  right: -18%;
+  width: 160px;
+  animation-duration: 68s;
+}

@@ -25,16 +25,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # 1. ลง PyArrow ก่อนเพื่อกันเหนียว (ตัวปัญหาขาประจำ)
-        pip install "pyarrow>=14.0.0" 
-        
-        # 2. ลง Library หลัก (ระบุเวอร์ชัน evidently ให้ชัดเจน)
-        pip install pandas numpy scikit-learn xgboost "mlflow==2.17.2" joblib "evidently>=0.4.0" openmeteo-requests requests-cache retry-requests dagshub
-        
-        # 3. (สำคัญ) ปริ้นท์รายชื่อ Library ออกมาดูว่า evidently ถูกติดตั้งจริงไหม
-        echo "=== Installed Packages ==="
-        pip list
-        echo "=========================="
+        # ระบุ mlflow version ที่เข้ากันได้กับ DagsHub
+        pip install pandas numpy scikit-learn xgboost mlflow==2.17.2 joblib evidently openmeteo-requests requests-cache retry-requests dagshub
+
+    # 2. Data Pipeline (ต้องรันเรียงลำดับ)
+    
+    - name: 1. Fetch Latest Data
+      run: python src/data_loader.py
+
+    - name: 2. Preprocess & Generate Scaler
+      # สำคัญมาก! ต้องรันเพื่อสร้าง models/scaler.pkl ให้ขั้นตอนต่อไปใช้
+      run: python src/preprocess.py
 
     # 5. Prediction (ทำเสมอ ไม่ว่า Drift หรือไม่)
     - name: 5. 🔮 Run Prediction for Web

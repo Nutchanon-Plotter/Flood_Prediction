@@ -21,7 +21,7 @@ const mockData = {
   ],
 };
 
-// เลือกไอคอนสวย ๆ แบบ emoji
+
 const getRiskIcon = (risk) => {
   switch (risk) {
     case "Low":
@@ -47,16 +47,18 @@ export default function App() {
         backgroundImage:
           "linear-gradient(to bottom, #90c9ff 0%, #79b6ecff 50%, #ffffff 100%)",
         backgroundSize: "cover",
+        backgroundAttachment: "fixed",
         backgroundPosition: "center",
         color: "white",
         textAlign: "center",
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
         position: "relative",
         paddingTop: "5vh",
         paddingBottom: "50px",
       }}
     >
-      {/* ☁ เมฆ */}
+    
       <img src={cloud} className="cloud c1" />
       <img src={cloud} className="cloud c2" />
       <img src={cloud} className="cloud c3" />
@@ -104,7 +106,7 @@ export default function App() {
           width: "90%",
           maxWidth: "600px",
           borderRadius: "1.5rem",
-          backgroundColor: "rgba(79, 85, 107, 0.2)", // สีเทาอ่อนกว่าเดิม
+          backgroundColor: "rgba(79, 85, 107, 0.2)", 
           padding: "10px",
           boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
         }}

@@ -43,7 +43,7 @@
   animation-duration: 65s;
 }
 
-/* ☁ Animation เมฆลอยจากซ้าย → ขวา */
+
 @keyframes float {
   0% {
     transform: translateX(0px);

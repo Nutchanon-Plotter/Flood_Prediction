@@ -11,7 +11,9 @@ from datetime import timedelta
 import datetime as dt
 from sklearn.preprocessing import StandardScaler
 import os
+import sys
 import warnings
+
 warnings.filterwarnings("ignore")
 
 # --------------------------------------------------------------------------------
@@ -94,7 +96,7 @@ def run_preprocess(df):
     
     df = df.set_index('date').sort_index()
     
-    # Fill NaN for soil columns if any (Important for inference stability)
+    # Fill NaN for soil columns
     soil_cols = [c for c in df.columns if 'soil' in c]
     if soil_cols:
         df[soil_cols] = df[soil_cols].fillna(method='ffill').fillna(method='bfill')
@@ -120,126 +122,122 @@ def run_preprocess(df):
     return df_target
 
 # --------------------------------------------------------------------------------
-# 4. MAIN EXECUTION (Final Logic)
+# 4. MODEL LOADER HELPER
+# --------------------------------------------------------------------------------
+
+def load_production_model():
+    """โหลดโมเดลผู้ชนะโดยอ่านชื่อไฟล์จาก model_filename.txt"""
+    try:
+        # Path handling สำหรับ GitHub Actions
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(base_dir)
+        models_dir = os.path.join(project_root, 'models')
+        
+        filename_path = os.path.join(models_dir, "model_filename.txt")
+        
+        with open(filename_path, "r") as f:
+            filename = f.read().strip()
+        
+        model_path = os.path.join(models_dir, filename)
+        print(f"📂 Loading Production Model: {filename}")
+
+        if filename.endswith(".json"):
+            model = xgb.XGBClassifier()
+            model.load_model(model_path)
+        else:
+            model = joblib.load(model_path)
+        return model, models_dir
+        
+    except FileNotFoundError as e:
+        print(f"❌ Error loading model: {e}")
+        # ถ้าหาไม่เจอ ให้ Exit เพื่อให้ GitHub Action รู้ว่าพัง
+        sys.exit(1)
+
+# --------------------------------------------------------------------------------
+# 5. MAIN EXECUTION
 # --------------------------------------------------------------------------------
 if __name__ == '__main__':
-    # 1. Load Data
-    print("--- 1. Loading Data ---")
+    print("🔮 Starting Daily Prediction Pipeline...")
+
+    # 1. Load Model & Scaler
+    model, models_dir = load_production_model()
+    
+    SCALER_PATH = os.path.join(models_dir, "scaler.pkl")
+    if not os.path.exists(SCALER_PATH):
+        print(f"❌ Error: Scaler not found at {SCALER_PATH}")
+        sys.exit(1)
+    
+    scaler = joblib.load(SCALER_PATH)
+    print("✅ Model and Scaler loaded successfully.")
+
+    # 2. Load Data (Forecast)
+    print("--- Loading Forecast Data ---")
     loader = ForecastLoader()
     df_raw = loader.get_forecast_data_multi(LOCATIONS)
     
-    # 2. Preprocess
-    print("--- 2. Preprocessing ---")
+    # 3. Preprocess
+    print("--- Preprocessing Data ---")
     df_processed = run_preprocess(df_raw)
 
-    # 3. Filter Forecast Period
+    # 4. Filter Forecast Period (Next 7 Days)
     today = pd.to_datetime(dt.date.today()).tz_localize('Asia/Bangkok').normalize()
     df_forecast = df_processed[df_processed.index >= today].copy()
     df_forecast = df_forecast.iloc[:7]
 
     if not df_forecast.empty:
-        start_date_str = df_forecast.index.min().strftime('%Y-%m-%d')
-        end_date_str = df_forecast.index.max().strftime('%Y-%m-%d')
+        # 5. Align Features & Scale
+        # ดึงรายชื่อ Feature ที่ Scaler ต้องการ
+        expected_features = scaler.feature_names_in_
+        
+        # จัดเรียงคอลัมน์ + เติม 0 ถ้าขาด
+        df_aligned = df_forecast.reindex(columns=expected_features, fill_value=0)
+        df_aligned = df_aligned.fillna(0)
 
-        # ------------------------------------------------------------------
-        # 4. Load Scaler & Align Features (แก้ปัญหา NaN และ Col หาย)
-        # ------------------------------------------------------------------
-        SCALER_PATH = "models/scaler.pkl" 
-
-        if os.path.exists(SCALER_PATH):
-            print(f"✅ Loading scaler from {SCALER_PATH}")
-            scaler = joblib.load(SCALER_PATH)
-            
-            # 1. ดึงรายชื่อ Feature ที่ Scaler ต้องการ
-            expected_features = scaler.feature_names_in_
-            
-            # 2. [Magic Fix] จัดเรียงคอลัมน์ + เติม 0
-            # - fill_value=0 : ถ้าคอลัมน์ไหนขาด (เช่น Soil) ให้เติม 0
-            df_aligned = df_forecast.reindex(columns=expected_features, fill_value=0)
-            
-            # 3. [Extra Safety] เติม 0 อีกครั้งเผื่อมี NaN หลงเหลือในคอลัมน์ที่มีอยู่แล้ว
-            df_aligned = df_aligned.fillna(0)
-
-            # 4. Transform
-            X_scaled = scaler.transform(df_aligned)
-            
-            # 5. สร้าง DataFrame ผลลัพธ์
-            df_result = pd.DataFrame(X_scaled, columns=expected_features)
-            
-            # ------------------------------------------------------------------
-            # 5. Save
-            # ------------------------------------------------------------------
-            output_filename = f"data/inference_data/final_inference_data_{start_date_str}_{end_date_str}.csv"
-            
-            import os
-            os.makedirs('data/inference_data', exist_ok=True)
-
-            df_result.to_csv(output_filename, index=False)
-            
-            print(f"\n--- ✅ Process Complete ---")
-            print(f"Data Range: {start_date_str} to {end_date_str}")
-            print(f"Saved to: {output_filename}")
-            
-            # แสดงตัวอย่างข้อมูล 5 แถวแรก (จะเห็นว่าไม่มี ,, ว่างๆ แล้ว)
-            print(df_result.head())
-
+        # Scale Data
+        X_scaled = scaler.transform(df_aligned)
+        
+        # 6. Predict
+        print("--- Running Inference ---")
+        predictions = model.predict(X_scaled)
+        
+        # Calculate Probability (ถ้ามี)
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X_scaled)
+            # Multiclass: [Normal, Risk, Flood] -> เอาโอกาสเกิด Flood (index 2)
+            if probs.shape[1] == 3:
+                flood_probs = probs[:, 2] * 100
+            else:
+                flood_probs = probs.max(axis=1) * 100
         else:
-            print(f"❌ Error: Scaler not found at {SCALER_PATH}")
-            exit()
+            flood_probs = [0] * len(predictions)
+
+        # 7. Output Results
+        results = []
+        status_map = {0: "Normal", 1: "Risk", 2: "Flood"}
+        
+        for date, pred, prob in zip(df_forecast.index, predictions, flood_probs):
+            status_text = status_map.get(int(pred), "Unknown")
+            
+            results.append({
+                "date": date.strftime('%Y-%m-%d'),
+                "status_code": int(pred),
+                "status_text": status_text,
+                "flood_probability": float(prob),
+                "risk_level": "High" if pred == 2 else ("Medium" if pred == 1 else "Low")
+            })
+        
+        # Save JSON
+        # หา root path
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(base_dir)
+        output_path = os.path.join(project_root, "prediction_results.json")
+        
+        with open(output_path, "w") as f:
+            json.dump(results, f, indent=4)
+            
+        print(f"✅ Prediction saved to: {output_path}")
+        print(json.dumps(results, indent=2))
 
     else:
-        print("Error: No forecast data available.")
-
-# --------------------------------------------------------------------------------
-# def run_prediction():
-#     # 1. Load Model
-#     model = xgb.XGBClassifier()
-#     model.load_model("models/xgboost_model.json")
-#     scaler = joblib.load("models/scaler.pkl")
-    
-#     # 2. Fetch Data (Past + Future)
-#     df = fetch_combined_data()
-    
-#     # 3. Create Lag Features (Shift ข้อมูลใน DataFrame เดียวกัน)
-#     # ค่า Lag ของ "วันพรุ่งนี้" จะไปดึงมาจาก "Observed Data" ของ 5-7 วันที่แล้ว
-#     # ค่า Lag ของ "อีก 7 วันข้างหน้า" จะไปดึงมาจาก "Forecast Data" ของ 2 วันข้างหน้า
-#     df['precip_lag_5'] = df['precipitation_sum'].shift(5)
-#     df['precip_lag_6'] = df['precipitation_sum'].shift(6)
-#     df['precip_lag_7'] = df['precipitation_sum'].shift(7)
-    
-#     # 4. Filter เอาเฉพาะ "อนาคต 7 วัน" (วันนี้ + 1 ถึง วันนี้ + 7)
-#     # ใช้ pd.Timestamp.now() เพื่อหาเส้นแบ่งเวลาปัจจุบัน
-#     today = pd.Timestamp.now(tz='Asia/Bangkok').normalize()
-#     future_df = df[df['date'] >= today].head(7).copy()
-    
-#     # Fill NaN (เผื่อ Lag วันแรกๆ ขาดหายไป)
-#     future_df = future_df.fillna(0)
-    
-#     print(f"Predicting for dates: {future_df['date'].dt.date.values}")
-
-#     # 5. Prepare & Predict
-#     features = ['precipitation_sum', 'soil_moisture_0_to_100cm_mean', 'temperature_2m_mean',
-#                 'precip_lag_5', 'precip_lag_6', 'precip_lag_7']
-    
-#     X = future_df[features]
-#     X_scaled = scaler.transform(X)
-    
-#     predictions = model.predict(X_scaled)
-#     probs = model.predict_proba(X_scaled)[:, 1]
-    
-#     # 6. Output JSON (List of Objects)
-#     results = []
-#     for date, pred, prob in zip(future_df['date'], predictions, probs):
-#         results.append({
-#             "date": date.strftime('%Y-%m-%d'),
-#             "is_flood": int(pred),
-#             "flood_probability": float(prob) * 100,
-#             "risk_level": "High" if prob > 0.5 else "Low"
-#         })
-    
-#     with open("prediction_results.json", "w") as f:
-#         json.dump(results, f, indent=4)
-#     print("7-day prediction saved to prediction_results.json")
-
-# if __name__ == "__main__":
-#     run_prediction()
+        print("❌ Error: No forecast data available to predict.")
+        sys.exit(1)

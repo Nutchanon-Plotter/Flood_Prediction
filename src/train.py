@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, classification_report, f1_score
 import pandas as pd
 import os
 import numpy as np
-import shutil  # ใช้สำหรับ copy ไฟล์โมเดล
+import shutil
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
@@ -16,20 +16,31 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 import joblib
 from mlflow.tracking import MlflowClient
-import dagshub  # <--- [เพิ่ม] Import DagsHub
+import dagshub
+
+# --- 🛠️ Path Setup (เพื่อให้รันได้ทั้ง Local และ GitHub Actions) ---
+# หาตำแหน่งของไฟล์นี้ (src/train.py)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+# ถอยหลัง 1 ขั้นเพื่อหา Project Root
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+
+# Helper function เพื่อสร้าง Path ที่ถูกต้อง
+def get_path(*args):
+    return os.path.join(PROJECT_ROOT, *args)
 
 # --- Helper Functions ---
 
 def calculate_multiclass_weights():
-    # 1. Load Target Data
+    # Load Target Data (ใช้ get_path แก้ปัญหา FileNotFoundError)
+    data_path = get_path('data', 'preprocess_data', 'y_train.csv')
     try:
-        y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
-        print("✅ โหลดไฟล์ y_train.csv สำเร็จ")
+        y_train = pd.read_csv(data_path, index_col=0).squeeze()
+        print(f"✅ โหลดไฟล์ y_train.csv สำเร็จจาก: {data_path}")
     except FileNotFoundError:
-        print("❌ Error: ไม่พบไฟล์ y_train.csv")
-        exit()
+        print(f"❌ Error: ไม่พบไฟล์ y_train.csv ที่ {data_path}")
+        exit(1)
 
-    # 2. Calculate Weights
+    # Calculate Weights
     classes = np.unique(y_train)
     weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
     multiclass_weights = dict(zip(classes, weights))
@@ -41,10 +52,12 @@ def calculate_multiclass_weights():
     return multiclass_weights
 
 def feature_selection():
-    # Load Data for Selection
+    y_path = get_path('data', 'preprocess_data', 'y_train.csv')
+    X_path = get_path('data', 'preprocess_data', 'X_train_scaled.csv')
+
     try:
-        y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
-        X_train_scaled_df = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
+        y_train = pd.read_csv(y_path, index_col=0).squeeze()
+        X_train_scaled_df = pd.read_csv(X_path, index_col=0)
     except FileNotFoundError:
         print("❌ Error: ไม่พบไฟล์ข้อมูลสำหรับ Feature Selection")
         return []
@@ -78,14 +91,14 @@ def feature_selection():
     return selected_features
 
 def Load_processed_data():
-    # เรียกใช้ Feature Selection เพื่อคัดเลือกตัวแปรที่สำคัญที่สุด
+    # เรียกใช้ Feature Selection
     selected_features = feature_selection()
     
-    # Load full data
-    X_train_scale = pd.read_csv('../data/preprocess_data/X_train_scaled.csv', index_col=0)
-    X_test_scale = pd.read_csv('../data/preprocess_data/X_test_scaled.csv', index_col=0)
-    y_train = pd.read_csv('../data/preprocess_data/y_train.csv', index_col=0).squeeze()
-    y_test = pd.read_csv('../data/preprocess_data/y_test.csv', index_col=0).squeeze()
+    # Load full data using robust paths
+    X_train_scale = pd.read_csv(get_path('data', 'preprocess_data', 'X_train_scaled.csv'), index_col=0)
+    X_test_scale = pd.read_csv(get_path('data', 'preprocess_data', 'X_test_scaled.csv'), index_col=0)
+    y_train = pd.read_csv(get_path('data', 'preprocess_data', 'y_train.csv'), index_col=0).squeeze()
+    y_test = pd.read_csv(get_path('data', 'preprocess_data', 'y_test.csv'), index_col=0).squeeze()
     
     # Filter only selected features
     if selected_features:
@@ -101,10 +114,11 @@ def Load_processed_data():
 def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_test, y_test, sample_weights):
     print(f"\n--- 🧠 Starting Grid Search Tuning for: {model_name} ---")
 
-    # สร้างโฟลเดอร์ models ป้องกัน FileNotFoundError
-    os.makedirs("models", exist_ok=True)
+    # สร้างโฟลเดอร์ models (ใช้ Absolute Path)
+    models_dir = get_path("models")
+    os.makedirs(models_dir, exist_ok=True)
 
-    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42) # ลด split ลงเพื่อความเร็ว
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
     grid_search = GridSearchCV(
         estimator=model,
@@ -142,7 +156,7 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
         mlflow.log_metric("test_accuracy", accuracy)
         mlflow.log_metric("test_f1_weighted", f1_weighted)
         
-        # Log F1-score per class (แก้ Key Error ตรงนี้)
+        # Log F1-score per class
         for cls, metrics in report.items():
             if isinstance(metrics, dict) and 'f1-score' in metrics:
                 mlflow.log_metric(f"test_{cls}_f1_score", metrics['f1-score'])
@@ -153,8 +167,8 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
         else:
             mlflow.sklearn.log_model(best_model, "model")
 
-        # Save Model Locally (ระบุ path ให้ชัดเจน)
-        model_filename = f"models/{model_name}_best_model"
+        # Save Model Locally
+        model_filename = os.path.join(models_dir, f"{model_name}_best_model")
         if model_name == "XGBoost":
              best_model.save_model(f"{model_filename}.json")
         else:
@@ -168,7 +182,7 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
 
 def train():
     # 0. Setup Directories
-    os.makedirs("models", exist_ok=True)
+    os.makedirs(get_path("models"), exist_ok=True)
     
     # 1. Load Data
     X_train, X_test, y_train, y_test = Load_processed_data()
@@ -181,7 +195,7 @@ def train():
     multiclass_weights = calculate_multiclass_weights()
     sample_weights_array = y_train.map(multiclass_weights).values
 
-    # 3. Hyperparameters (ลดขนาดลงเล็กน้อยเพื่อให้รันเร็วขึ้นบน GitHub Actions)
+    # 3. Hyperparameters
     lr_params = { 'C': [1, 10], 'solver': ['lbfgs'] }
     lr_model_base = LogisticRegression(multi_class='multinomial', random_state=42, max_iter=1000, class_weight='balanced')
     
@@ -193,20 +207,13 @@ def train():
     xgb_model_base = XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42, 
                                   objective='multi:softprob', num_class=num_classes)
 
-    # 4. MLflow Config (DagsHub)
-    
+    # 4. Initialize DagsHub & MLflow
     print("\n=======================================================")
     print("🚀 Initializing DagsHub & MLflow")
     print("=======================================================")
     
-    # --- [ส่วนที่เพิ่ม] ใช้ dagshub.init ---
-    # ฟังก์ชันนี้จะตั้งค่า Tracking URI และ Authentication ให้เอง
-    # มันจะพยายามอ่าน Token จาก Environment Variable 'DAGSHUB_TOKEN' (ใน GitHub Actions)
-    # หรือถ้าคุณรัน local แล้ว login ไว้แล้ว มันจะใช้ค่าเหล่านั้น
-    
+    # Init DagsHub: อ่าน Token จาก env variable 'DAGSHUB_TOKEN' อัตโนมัติ
     dagshub.init(repo_owner='plotter.natchanon', repo_name='Flood_Prediction', mlflow=True)
-    
-    # ตั้งชื่อ Experiment
     mlflow.set_experiment("Flood_Prediction_Project")
     
     print("\n=======================================================")
@@ -217,21 +224,21 @@ def train():
 
     with mlflow.start_run(run_name="Summary_and_Promotion") as summary_run:
         
-        # Model A: Logistic Regression
+        # Logistic Regression
         lr_run_id, lr_f1, lr_name = tune_train_evaluate_mlflow(
             lr_model_base, lr_params, "Logistic Regression", 
             X_train_values, y_train_flat, X_test_values, y_test_flat, None 
         )
         results.append({"run_id": lr_run_id, "f1_weighted": lr_f1, "name": lr_name})
 
-        # Model B: Random Forest
+        # Random Forest
         rf_run_id, rf_f1, rf_name = tune_train_evaluate_mlflow(
             rf_model_base, rf_params, "Random Forest", 
             X_train_values, y_train_flat, X_test_values, y_test_flat, None 
         )
         results.append({"run_id": rf_run_id, "f1_weighted": rf_f1, "name": rf_name})
 
-        # Model C: XGBoost
+        # XGBoost
         xgb_run_id, xgb_f1, xgb_name = tune_train_evaluate_mlflow(
             xgb_model_base, xgb_params, "XGBoost", 
             X_train_values, y_train_flat, X_test_values, y_test_flat, sample_weights_array
@@ -246,30 +253,26 @@ def train():
         
         print(f"\n🏆 BEST MODEL: {best_name} (F1: {best_f1:.4f})")
 
-        # ------------------------------------------------------------------
-        # 6. Save Production Model (Renaming for easy API access)
-        # ------------------------------------------------------------------
+        # 6. Save Production Model (Renaming)
+        models_dir = get_path("models")
         source_ext = "json" if best_name == "XGBoost" else "pkl"
-        source_path = f"models/{best_name}_best_model.{source_ext}"
-        
-        target_path = f"models/production_model.{source_ext}"
+        source_path = os.path.join(models_dir, f"{best_name}_best_model.{source_ext}")
+        target_path = os.path.join(models_dir, f"production_model.{source_ext}")
         
         if os.path.exists(source_path):
             shutil.copy(source_path, target_path)
             print(f"✅ Production model saved to: {target_path}")
             
-            with open("models/model_metadata.txt", "w") as f:
+            # Save Metadata
+            with open(os.path.join(models_dir, "model_metadata.txt"), "w") as f:
                 f.write(best_name)
                 
-            with open("models/model_filename.txt", "w") as f:
+            with open(os.path.join(models_dir, "model_filename.txt"), "w") as f:
                 f.write(f"production_model.{source_ext}")
-
         else:
             print(f"⚠️ Error: Source model file not found: {source_path}")
 
-        # ------------------------------------------------------------------
         # 7. MLflow Promotion
-        # ------------------------------------------------------------------
         PROMOTION_THRESHOLD = 0.80
         
         if best_f1 >= PROMOTION_THRESHOLD:

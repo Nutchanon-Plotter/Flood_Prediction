@@ -55,9 +55,4 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        
-        # Add ไฟล์โมเดล (เผื่อถูกเปลี่ยน) และผลทำนาย
-        # Add ไฟล์ผลลัพธ์ทั้งหมด (json, pkl, csv, html)
-        git add models/* prediction_results.json        
-        # Commit และ Push
         git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Pipeline Processed" && git push)

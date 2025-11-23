@@ -16,7 +16,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 import joblib
 from mlflow.tracking import MlflowClient
-import dagshub
+
 
 # --- 🛠️ Path Setup (เพื่อให้รันได้ทั้ง Local และ GitHub Actions) ---
 # หาตำแหน่งของไฟล์นี้ (src/train.py)

@@ -55,4 +55,12 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Pipeline Processed" && git push)
+        
+        # --- แก้ตรงนี้: Add เฉพาะโฟลเดอร์ models ---
+        git add -f models/
+        
+        # เช็คว่ามีการเปลี่ยนแปลงไหม (ถ้ามีแค่ prediction_results เปลี่ยน แต่มันไม่ได้ถูก add คำสั่งนี้จะข้ามไป)
+        git status
+        
+        # Commit และ Push
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Model Artifacts only" && git push)

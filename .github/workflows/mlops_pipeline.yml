@@ -35,26 +35,6 @@ jobs:
         echo "=== Installed Packages ==="
         pip list
         echo "=========================="
-    # 2. Data Pipeline (ต้องรันเรียงลำดับ)
-    
-    - name: 1. Fetch Latest Data
-      run: python src/data_loader.py
-
-    - name: 2. Preprocess & Generate Scaler
-      # สำคัญมาก! ต้องรันเพื่อสร้าง models/scaler.pkl ให้ขั้นตอนต่อไปใช้
-      run: python src/preprocess.py
-
-    # 4. Retraining (ทำเฉพาะตอนเจอ Drift)
-    - name: 4. 🚨 Drift Detected - Retraining Model
-      if: steps.drift_check.outputs.drift_detected == 'true'
-      env: 
-        # ส่ง Secret ให้ DagsHub/MLflow
-        DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-      run: |
-        echo "Data has drifted. Retraining the model..."
-        python src/train.py
 
     # 5. Prediction (ทำเสมอ ไม่ว่า Drift หรือไม่)
     - name: 5. 🔮 Run Prediction for Web

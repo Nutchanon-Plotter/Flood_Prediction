@@ -71,24 +71,47 @@ jobs:
         echo "Running inference using the production model..."
         python src/predict_daily.py
 
-# 7. Save & Commit Results
+# ... (Steps ก่อนหน้าเหมือนเดิม) ...
+
+    # 7. Commit & Push (เช็ค Data Change ที่นี่)
     - name: 6. Commit and Push Updates
+      id: commit_step
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         
-        # 1. Add ไฟล์โมเดล (บังคับ)
+        # Add Files
         git add -f models/*
-        
-        # 2. Add ผลลัพธ์ JSON (ทั้ง 2 ที่)
         git add predict_result/prediction_results.json
         git add web/frontend/public/prediction_results.json
-        
-        # 3. Add ข้อมูลดิบ (บังคับ Add เพราะติด gitignore) <--- แก้ตรงนี้
         git add -f data/raw/raw_data.csv
         
-        # เช็คสถานะ (Debug)
-        git status
+        # --- เช็คว่า Data เปลี่ยนไหม? ---
+        if git diff --name-only --cached | grep -q "data/raw/raw_data.csv"; then
+          # สร้างชื่อ Tag (เช่น data-20251125)
+          NEW_TAG="data-$(date +'%Y%m%d-%H%M%S')"
+          
+          # ส่งค่าตัวแปรไปใช้ใน Step ถัดไป
+          echo "DATA_CHANGED=true" >> $GITHUB_ENV
+          echo "TAG_NAME=$NEW_TAG" >> $GITHUB_ENV
+          
+          echo "📊 Data changed! Scheduled for release: $NEW_TAG"
+        else
+          echo "DATA_CHANGED=false" >> $GITHUB_ENV
+          echo "No data change."
+        fi
         
-        # Commit และ Push
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Pipeline Output [skip ci]" && git push)
+        # Commit & Push
+        git diff --cached --quiet || (git commit -m "Auto-update: Pipeline Output [skip ci]" && git push)
+
+    # 8. [ใหม่] สร้าง Release และแนบไฟล์ Data (เฉพาะตอน Data เปลี่ยน)
+    - name: 7. Create Data Release
+      if: env.DATA_CHANGED == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        name: "Data Update: ${{ env.TAG_NAME }}"
+        body: "New data fetched from Open-Meteo API."
+        files: data/raw/raw_data.csv  # <--- แนบไฟล์นี้ไปกับ Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

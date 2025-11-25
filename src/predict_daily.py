@@ -25,7 +25,38 @@ LOCATIONS = [
     {"name": "NakhonSawan_Muang_Upstream", "lat": 15.700409309316225, "lon": 100.14120663110944},
 ]
 
-WEATHER_VARS = ["temperature_2m_min", "apparent_temperature_mean", "apparent_temperature_max", "apparent_temperature_min", "temperature_2m_max", "temperature_2m_mean", "daylight_duration", "sunshine_duration", "precipitation_sum", "rain_sum", "snowfall_sum", "precipitation_hours", "wind_speed_10m_max", "wind_direction_10m_dominant", "shortwave_radiation_sum", "et0_fao_evapotranspiration", "soil_moisture_0_to_100cm_mean", "soil_moisture_0_to_7cm_mean", "soil_moisture_28_to_100cm_mean", "soil_moisture_7_to_28cm_mean", "soil_temperature_0_to_100cm_mean", "soil_temperature_0_to_7cm_mean", "soil_temperature_28_to_100cm_mean", "soil_temperature_7_to_28cm_mean", "wet_bulb_temperature_2m_mean", "wet_bulb_temperature_2m_max", "wet_bulb_temperature_2m_min", "vapour_pressure_deficit_max", "surface_pressure_mean", "surface_pressure_max", "surface_pressure_min", "winddirection_10m_dominant", "wind_gusts_10m_max", "wind_gusts_10m_mean", "wind_speed_10m_mean", "wind_gusts_10m_min", "wind_speed_10m_min", "pressure_msl_min", "pressure_msl_max", "pressure_msl_mean", "snowfall_water_equivalent_sum", "relative_humidity_2m_max", "relative_humidity_2m_min", "relative_humidity_2m_mean", "et0_fao_evapotranspiration_sum", "dew_point_2m_min", "dew_point_2m_max", "dew_point_2m_mean", "cloud_cover_mean", "cloud_cover_max", "cloud_cover_min"]
+# 🔥 รายชื่อ 57 Features ที่ต้องมี
+EXPECTED_FEATURES = [
+    "temperature_2m_min", "apparent_temperature_mean", "apparent_temperature_max", "apparent_temperature_min",
+    "temperature_2m_max", "temperature_2m_mean", "daylight_duration", "sunshine_duration",
+    "precipitation_sum", "rain_sum", "snowfall_sum", "precipitation_hours",
+    "wind_speed_10m_max", "wind_direction_10m_dominant", "shortwave_radiation_sum", "et0_fao_evapotranspiration",
+    "soil_moisture_0_to_100cm_mean", "soil_moisture_0_to_7cm_mean", "soil_moisture_28_to_100cm_mean", "soil_moisture_7_to_28cm_mean",
+    "soil_temperature_0_to_100cm_mean", "soil_temperature_0_to_7cm_mean", "soil_temperature_28_to_100cm_mean", "soil_temperature_7_to_28cm_mean",
+    "wet_bulb_temperature_2m_mean", "wet_bulb_temperature_2m_max", "wet_bulb_temperature_2m_min", "vapour_pressure_deficit_max",
+    "surface_pressure_mean", "surface_pressure_max", "surface_pressure_min", "winddirection_10m_dominant",
+    "wind_gusts_10m_max", "wind_gusts_10m_mean", "wind_speed_10m_mean", "wind_gusts_10m_min", "wind_speed_10m_min",
+    "pressure_msl_min", "pressure_msl_max", "pressure_msl_mean", "snowfall_water_equivalent_sum",
+    "relative_humidity_2m_max", "relative_humidity_2m_min", "relative_humidity_2m_mean", "et0_fao_evapotranspiration_sum",
+    "dew_point_2m_min", "dew_point_2m_max", "dew_point_2m_mean", "cloud_cover_mean", "cloud_cover_max", "cloud_cover_min",
+    "C2_discharge_lag1", "C2_discharge_lag2", "precip_rolling_7d", "precip_rolling_15d",
+    "soil_moisture_rolling_7d_avg", "month"
+]
+
+WEATHER_VARS = [
+    "temperature_2m_min", "apparent_temperature_mean", "apparent_temperature_max", "apparent_temperature_min", 
+    "temperature_2m_max", "temperature_2m_mean", "daylight_duration", "sunshine_duration", 
+    "precipitation_sum", "rain_sum", "snowfall_sum", "precipitation_hours", 
+    "wind_speed_10m_max", "wind_direction_10m_dominant", "shortwave_radiation_sum", "et0_fao_evapotranspiration", 
+    "soil_moisture_0_to_100cm_mean", "soil_moisture_0_to_7cm_mean", "soil_moisture_28_to_100cm_mean", "soil_moisture_7_to_28cm_mean", 
+    "soil_temperature_0_to_100cm_mean", "soil_temperature_0_to_7cm_mean", "soil_temperature_28_to_100cm_mean", "soil_temperature_7_to_28cm_mean", 
+    "wet_bulb_temperature_2m_mean", "wet_bulb_temperature_2m_max", "wet_bulb_temperature_2m_min", "vapour_pressure_deficit_max", 
+    "surface_pressure_mean", "surface_pressure_max", "surface_pressure_min", 
+    "wind_gusts_10m_max", "wind_gusts_10m_mean", "wind_speed_10m_mean", "wind_gusts_10m_min", "wind_speed_10m_min", 
+    "pressure_msl_min", "pressure_msl_max", "pressure_msl_mean", "snowfall_water_equivalent_sum", 
+    "relative_humidity_2m_max", "relative_humidity_2m_min", "relative_humidity_2m_mean", "et0_fao_evapotranspiration_sum", 
+    "dew_point_2m_min", "dew_point_2m_max", "dew_point_2m_mean", "cloud_cover_mean", "cloud_cover_max", "cloud_cover_min"
+]
 FLOOD_VARS = ["river_discharge"]
 
 # --------------------------------------------------------------------------------
@@ -97,6 +128,9 @@ def run_preprocess(df):
     if soil_cols:
         df[soil_cols] = df[soil_cols].fillna(method='ffill').fillna(method='bfill')
 
+    if 'wind_direction_10m_dominant' in df.columns:
+        df['winddirection_10m_dominant'] = df['wind_direction_10m_dominant']
+
     df_target = df[df['location'] == 'ChaoPhraya_Dam'].copy()
     df_upstream = df[df['location'] == 'NakhonSawan_Muang_Upstream'].copy()
 
@@ -167,93 +201,99 @@ def load_production_model_verified():
 if __name__ == '__main__':
     print("🔮 Starting Daily Prediction Pipeline...")
 
-    # 1. Load Verified Model
+    # 1. Load Model & Scaler
     model, models_dir, model_type = load_production_model_verified()
-    
-    # 2. Load Scaler
     SCALER_PATH = os.path.join(models_dir, "scaler.pkl")
     if not os.path.exists(SCALER_PATH):
         print(f"❌ Error: Scaler not found at {SCALER_PATH}")
         sys.exit(1)
-    
     scaler = joblib.load(SCALER_PATH)
     print("✅ Scaler loaded successfully.")
 
-    # 3. Load Data & Preprocess
-    print("--- Loading & Preprocessing Data ---")
+    # 2. Load Data
     loader = ForecastLoader()
     df_raw = loader.get_forecast_data_multi(LOCATIONS)
     df_processed = run_preprocess(df_raw)
 
-    # 4. Filter Next 7 Days
+    # 3. Filter & Align
     today = pd.to_datetime(dt.date.today()).tz_localize('Asia/Bangkok').normalize()
     df_forecast = df_processed[df_processed.index >= today].copy()
     df_forecast = df_forecast.iloc[:7]
 
     if not df_forecast.empty:
-        # --- Handle Shape Mismatch ---
-        scaler_features = scaler.feature_names_in_
-        df_aligned = df_forecast.reindex(columns=scaler_features, fill_value=0).fillna(0)
-        X_scaled_all = scaler.transform(df_aligned)
-        X_scaled_df = pd.DataFrame(X_scaled_all, columns=scaler_features)
+        print(f"📊 Aligning features with scaler ({len(EXPECTED_FEATURES)} features)...")
         
+        # FORCE ALIGNMENT
+        df_aligned = df_forecast.reindex(columns=EXPECTED_FEATURES, fill_value=0)
+        df_aligned = df_aligned.fillna(0)
+        
+        # SCALE
+        X_scaled_all = scaler.transform(df_aligned)
+        X_scaled_df = pd.DataFrame(X_scaled_all, columns=EXPECTED_FEATURES)
+        
+        # SELECT MODEL FEATURES
         required_features = []
         if model_type == "XGBoost":
-            try:
-                required_features = model.get_booster().feature_names
+            try: required_features = model.get_booster().feature_names
             except: pass
         else:
-            if hasattr(model, "feature_names_in_"):
-                required_features = model.feature_names_in_
+            if hasattr(model, "feature_names_in_"): required_features = model.feature_names_in_
         
-        if required_features is None or len(required_features) == 0:
-            print("⚠️ Warning: Could not detect model features. Using top 10 default.")
+        if not required_features:
+            print("⚠️ Warning: Using default top 10 features.")
             required_features = ['C2_discharge_lag1', 'soil_moisture_0_to_100cm_mean', 'soil_temperature_7_to_28cm_mean', 'soil_moisture_7_to_28cm_mean', 'precip_rolling_15d', 'soil_temperature_0_to_100cm_mean', 'soil_moisture_28_to_100cm_mean', 'daylight_duration', 'wet_bulb_temperature_2m_mean', 'dew_point_2m_mean']
 
-        print(f"🎯 Model expects {len(required_features)} features.")
+        print(f"🎯 Model uses {len(required_features)} features.")
         X_final = X_scaled_df[required_features]
         
-        # 6. Predict
-        print("--- Running Inference ---")
+        # PREDICT
         predictions = model.predict(X_final)
         
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(X_final)
-            if probs.shape[1] == 3:
-                flood_probs = probs[:, 2] * 100
-            else:
-                flood_probs = probs.max(axis=1) * 100
+            if probs.shape[1] == 3: flood_probs = probs[:, 2] * 100
+            else: flood_probs = probs.max(axis=1) * 100
         else:
             flood_probs = [0] * len(predictions)
 
-        # 7. Output Results
+        # OUTPUT
         results = []
         status_map = {0: "Normal", 1: "Risk", 2: "Flood"}
         
         for date, pred, prob in zip(df_forecast.index, predictions, flood_probs):
-            status_text = status_map.get(int(pred), "Unknown")
             results.append({
                 "date": date.strftime('%Y-%m-%d'),
                 "status_code": int(pred),
-                "status_text": status_text,
+                "status_text": status_map.get(int(pred), "Unknown"),
                 "flood_probability": float(prob),
                 "risk_level": "High" if pred == 2 else ("Medium" if pred == 1 else "Low")
             })
         
-        # --- 8. Save to 'predict_result' Directory (ส่วนที่แก้ไข) ---
         base_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(base_dir)
         
-        # สร้างโฟลเดอร์ predict_result ถ้ายังไม่มี
-        output_dir = os.path.join(project_root, "predict_result")
-        os.makedirs(output_dir, exist_ok=True)
+        # ========================================================
+        # 💾 SAVE 1: Save to predict_result/ (Standard)
+        # ========================================================
+        output_dir_1 = os.path.join(project_root, "predict_result")
+        os.makedirs(output_dir_1, exist_ok=True)
+        output_path_1 = os.path.join(output_dir_1, "prediction_results.json")
         
-        output_path = os.path.join(output_dir, "prediction_results.json")
-        
-        with open(output_path, "w") as f:
+        with open(output_path_1, "w") as f:
             json.dump(results, f, indent=4)
-            
-        print(f"✅ Prediction saved to: {output_path}")
+        print(f"✅ Prediction saved to: {output_path_1}")
+
+        # ========================================================
+        # 💾 SAVE 2: Save to webdev/fontend/public/ (Frontend)
+        # ========================================================
+        output_dir_2 = os.path.join(project_root, "webdev", "fontend", "public")
+        os.makedirs(output_dir_2, exist_ok=True)
+        output_path_2 = os.path.join(output_dir_2, "prediction_results.json")
+        
+        with open(output_path_2, "w") as f:
+            json.dump(results, f, indent=4)
+        print(f"✅ Prediction saved to: {output_path_2}")
+
         print(json.dumps(results, indent=2))
 
     else:

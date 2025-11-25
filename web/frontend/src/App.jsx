@@ -1,41 +1,66 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import cloud from "./assets/image.png";
 import "./App.css";
 
-const mockData = {
-  location: "Thung Khru District",
-  current: {
-    temp: 27,
-    condition: "Cloudy",
-    feelsLike: 28,
-    humidity: 72,
-  },
-  forecast: [
-    { day: "Today", risk: "Low" },
-    { day: "Tomorrow", risk: "Medium" },
-    { day: "Wed", risk: "Low" },
-    { day: "Thu", risk: "High" },
-    { day: "Fri", risk: "Low" },
-    { day: "Sat", risk: "Medium" },
-    { day: "Sun", risk: "Low" },
-  ],
-};
+function getDayLabel(dateStr) {
+  const date = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((date - today) / (1000 * 60 * 60 * 24));
 
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  return date.toLocaleDateString("en-US", { weekday: "short" });
+}
+
+function formatFullDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
 const getRiskIcon = (risk) => {
   switch (risk) {
     case "Low":
-      return "🟢"; // ความเสี่ยงต่ำ
+      return "💧";
     case "Medium":
-      return "🟡"; // ความเสี่ยงปานกลาง
+      return "🌊";
     case "High":
-      return "🔴"; // ความเสี่ยงสูง
+      return "🚨🌊";
     default:
       return "⚪";
   }
 };
 
 export default function App() {
+  const [forecast, setForecast] = useState([]);
+  const [todayData, setTodayData] = useState(null);
+
+  useEffect(() => {
+    fetch("/prediction_results.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const sorted = [...data].sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        );
+
+        const firstDay = sorted[0];
+        setTodayData({
+          ...firstDay,
+          fullDate: formatFullDate(firstDay.date),
+        });
+
+        const formatted = sorted.map((item) => ({
+          ...item,
+          dayLabel: getDayLabel(item.date),
+          fullDate: formatFullDate(item.date),
+        }));
+        setForecast(formatted);
+      })
+      .catch((err) => console.error("Load JSON error:", err));
+  }, []);
+
+  if (!todayData) return <div style={{ color: "white" }}>Loading...</div>;
+
   return (
     <div
       style={{
@@ -56,9 +81,10 @@ export default function App() {
         position: "relative",
         paddingTop: "5vh",
         paddingBottom: "50px",
+        fontFamily: "'Montserrat', 'Roboto', sans-serif",
       }}
     >
-    
+      {/* Clouds */}
       <img src={cloud} className="cloud c1" />
       <img src={cloud} className="cloud c2" />
       <img src={cloud} className="cloud c3" />
@@ -66,52 +92,46 @@ export default function App() {
       <img src={cloud} className="cloud-r r2" />
       <img src={cloud} className="cloud-r r3" />
 
-      {/* Main Weather Box */}
+      {/* Today Box */}
       <div
         style={{
           padding: "30px",
           backdropFilter: "blur(8px)",
           borderRadius: "2rem",
           backgroundColor: "rgba(255, 255, 255, 0.15)",
-          textShadow: "2px 2px 6px rgba(0,0,0,0.8)",
           width: "90%",
           maxWidth: "600px",
           marginBottom: "30px",
+          textShadow: "1px 1px 4px rgba(0,0,0,0.7)",
         }}
       >
-        <div style={{ fontSize: "1rem", textTransform: "uppercase", letterSpacing: "2px" }}>
-          My Location
-        </div>
-
-        <h1 style={{ fontSize: "4rem", fontWeight: "700", margin: "0.5rem 0", textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}>
-          {mockData.location}
+        <div style={{ fontSize: "1.5rem", opacity: 0.85, fontWeight: "500" }}>Today</div>
+        <h1 style={{ fontSize: "3rem", fontWeight: "700" }}>
+          {todayData.fullDate}
         </h1>
-
-        <div style={{ fontSize: "1.5rem", opacity: 0.95, textShadow: "1px 1px 5px rgba(0,0,0,0.9)" }}>
-          {mockData.current.condition}
+        <div style={{ fontSize: "1.8rem", marginTop: "10px", fontWeight: "500" }}>
+          {todayData.status_text}
         </div>
-
-        <div style={{ fontSize: "6rem", fontWeight: "800", margin: "1rem 0", textShadow: "3px 3px 10px rgba(0,0,0,0.9)" }}>
-          {mockData.current.temp}°
+        <div style={{ fontSize: "5rem", margin: "1rem 0" }}>
+          {getRiskIcon(todayData.risk_level)}
         </div>
-
-        <div style={{ fontSize: "1.2rem", opacity: 0.9, marginBottom: "1rem", textShadow: "1px 1px 6px rgba(0,0,0,0.9)" }}>
-          Feels like {mockData.current.feelsLike}° • Humidity {mockData.current.humidity}%
+        <div style={{ fontSize: "1.3rem", fontWeight: "500" }}>
+          Probability: {todayData.flood_probability.toFixed(2)}
         </div>
+        <div style={{ fontWeight: "600" }}>Risk: {todayData.risk_level}</div>
       </div>
 
-      {/* Forecast Container รวมทั้งหมด */}
+      {/* Forecast List */}
       <div
         style={{
           width: "90%",
           maxWidth: "600px",
+          backgroundColor: "rgba(79,85,107,0.2)",
           borderRadius: "1.5rem",
-          backgroundColor: "rgba(79, 85, 107, 0.2)", 
           padding: "10px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
         }}
       >
-        {mockData.forecast.map((day, idx) => (
+        {forecast.map((day, idx) => (
           <div
             key={idx}
             style={{
@@ -119,16 +139,20 @@ export default function App() {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 15px",
-              borderBottom: idx < mockData.forecast.length - 1 ? "1px solid rgba(255,255,255,0.2)" : "none",
+              borderBottom:
+                idx < forecast.length - 1
+                  ? "1px solid rgba(255,255,255,0.2)"
+                  : "none",
               color: "white",
               fontWeight: "bold",
-              textShadow: "1px 1px 4px rgba(0, 0, 0, 0.65)",
-              fontSize: "1.25rem",
+              fontSize: "1.2rem",
             }}
           >
-            <div style={{ flex: 1, textAlign: "left" }}>{day.day}</div>
-            <div style={{ flex: 1, fontSize: "1.5rem", textAlign: "center" }}>{getRiskIcon(day.risk)}</div>
-            <div style={{ flex: 1, textAlign: "right" }}>{day.risk} Risk</div>
+            <div style={{ flex: 2, textAlign: "left" }}>{day.fullDate}</div>
+            <div style={{ flex: 1, textAlign: "center", fontSize: "1.5rem" }}>
+              {getRiskIcon(day.risk_level)}
+            </div>
+            <div style={{ flex: 2, textAlign: "right" }}>{day.risk_level} Risk</div>
           </div>
         ))}
       </div>

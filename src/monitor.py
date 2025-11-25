@@ -8,12 +8,9 @@ from evidently.test_suite import TestSuite
 from evidently.tests import TestNumberOfDriftedColumns
 import warnings
 
-# ปิด Warning ที่ไม่จำเป็น
 warnings.filterwarnings("ignore")
 
-# --------------------------------------------------------------------------------
-# 1. CONFIG: 57 Features (Source of Truth)
-# --------------------------------------------------------------------------------
+# --- 1. CONFIG ---
 EXPECTED_FEATURES = [
     "temperature_2m_min", "apparent_temperature_mean", "apparent_temperature_max", "apparent_temperature_min",
     "temperature_2m_max", "temperature_2m_mean", "daylight_duration", "sunshine_duration",
@@ -31,9 +28,6 @@ EXPECTED_FEATURES = [
     "soil_moisture_rolling_7d_avg", "month"
 ]
 
-# --------------------------------------------------------------------------------
-# 2. PREPROCESS
-# --------------------------------------------------------------------------------
 def preprocess_current_data(df):
     if df.empty: return df
     df = df.copy()
@@ -41,12 +35,10 @@ def preprocess_current_data(df):
         df['date'] = pd.to_datetime(df['date'])
     df = df.set_index('date').sort_index()
     
-    # Fill NaN
     soil_cols = [c for c in df.columns if 'soil' in c]
     if soil_cols:
         df[soil_cols] = df[soil_cols].ffill().bfill()
 
-    # Fix Columns
     if 'wind_direction_10m_dominant' in df.columns:
         df['winddirection_10m_dominant'] = df['wind_direction_10m_dominant']
 
@@ -55,7 +47,6 @@ def preprocess_current_data(df):
     
     if df_target.empty: return pd.DataFrame()
 
-    # Lag Features
     lag_features = ['river_discharge']
     lag_days = [1, 2]
     if not df_upstream.empty:
@@ -64,10 +55,9 @@ def preprocess_current_data(df):
             lagged = df_upstream_predictors.shift(periods=lag).rename(columns={'C2_discharge': f'C2_discharge_lag{lag}'})
             df_target = df_target.merge(lagged, left_index=True, right_index=True, how='left')
     else:
-        # ปล่อยว่างไว้ (เดี๋ยวไปเติม Mean ทีหลัง)
+        # ปล่อย NaN ไว้ ให้ระบบ Monthly Mean Fill จัดการ
         pass 
 
-    # Rolling & Temporal
     df_target['precip_rolling_7d'] = df_target['precipitation_sum'].rolling(window=7).sum() 
     df_target['precip_rolling_15d'] = df_target['precipitation_sum'].rolling(window=15).sum()
     df_target['soil_moisture_rolling_7d_avg'] = df_target['soil_moisture_0_to_100cm_mean'].rolling(window=7).mean()
@@ -77,13 +67,9 @@ def preprocess_current_data(df):
     
     return df_target
 
-# --------------------------------------------------------------------------------
-# 3. MONITORING LOGIC
-# --------------------------------------------------------------------------------
 def monitor_drift():
-    print("🔎 Starting Data Drift Monitor (Relaxed Mode)...")
+    print("🔎 Starting Data Drift Monitor (Seasonal Imputation Mode)...")
     
-    # Setup Paths
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_dir)
     
@@ -100,50 +86,66 @@ def monitor_drift():
 
     try:
         reference_data = pd.read_csv(ref_path)[EXPECTED_FEATURES]
-        reference_means = reference_data.mean()
     except KeyError as e:
         print(f"❌ Reference schema mismatch: {e}")
         set_github_output(True)
         return
 
-    # 2. Load Current
+    # 2. Load & Process ALL History (Current Raw)
     if not os.path.exists(current_path):
         print("⚠️ Current data missing.")
         set_github_output(True)
         return
 
     raw_data = pd.read_csv(current_path)
-    current_processed = preprocess_current_data(raw_data)
+    # เรา Preprocess ข้อมูลทั้งหมด (20 ปี) เพื่อให้ได้ 'month' และ features ครบ
+    full_processed = preprocess_current_data(raw_data)
     
-    if current_processed.empty:
+    if full_processed.empty:
         print("❌ Processed data empty.")
         set_github_output(True)
         return
 
-    # 3. Smart Alignment & Fillna
-    current_aligned = current_processed.reindex(columns=EXPECTED_FEATURES)
-    current_aligned = current_aligned.fillna(reference_means).fillna(0)
+    # =================================================================
+    # 🔥 SEASONAL IMPUTATION: เติมค่าที่หายด้วย "ค่าเฉลี่ยรายเดือน"
+    # =================================================================
+    # 1. จัดเรียงคอลัมน์ให้ครบ 57 ตัว (ถ้าขาดจะได้ NaN)
+    full_aligned = full_processed.reindex(columns=EXPECTED_FEATURES)
     
+    print("📊 Calculating Monthly Means from full history...")
+    # 2. คำนวณค่าเฉลี่ยของแต่ละเดือน (1-12) จากข้อมูลทั้งหมด
+    # transform('mean') จะกระจายค่าเฉลี่ยกลับไปใส่ทุกแถวตามเดือนของมัน
+    monthly_means = full_aligned.groupby('month').transform('mean')
+    
+    # 3. เติม NaN ด้วยค่าเฉลี่ยของเดือนนั้นๆ
+    # เช่น ถ้าแถวนี้เดือน 8 และฝนหายไป -> จะเติมด้วยค่าเฉลี่ยฝนเดือน 8 (หน้าฝน)
+    full_filled = full_aligned.fillna(monthly_means)
+    
+    # 4. กันเหนียว: ถ้าเดือนไหนไม่มีข้อมูลเลย (NaN ทั้งเดือน) ให้เติม 0
+    full_filled = full_filled.fillna(0)
+    
+    # =================================================================
+
     # 4. Scale
     if os.path.exists(scaler_path):
         scaler = joblib.load(scaler_path)
-        current_scaled_np = scaler.transform(current_aligned)
+        current_scaled_np = scaler.transform(full_filled)
         current_final = pd.DataFrame(current_scaled_np, columns=EXPECTED_FEATURES)
     else:
         print("⚠️ Scaler not found.")
-        current_final = current_aligned
+        current_final = full_filled
 
+    # 5. Slice Recent Data (เอาแค่ 50 แถวล่าสุดไปตรวจ Drift)
     current_window = current_final.tail(50)
 
-    # 5. Smart Filter: ตัด Feature ที่นิ่งสนิทออก (Constant Filter)
+    # Filter Constant Features
     valid_features = []
     for col in EXPECTED_FEATURES:
-        # ถ้าค่าความแปรปรวน > 0 แสดงว่าข้อมูลมีการเคลื่อนไหวจริง
         if current_window[col].std() > 0.0001:
             valid_features.append(col)
     
     if len(valid_features) == 0:
-        print("⚠️ No valid features (Data is static). Skipping check.")
+        print("⚠️ No valid features. Skipping check.")
         set_github_output(False)
         return
 
@@ -152,8 +154,7 @@ def monitor_drift():
 
     print(f"   Checking {len(valid_features)}/{len(EXPECTED_FEATURES)} features.")
 
-    # 6. Run Evidently with Relaxed Threshold
-    # lt=20 : ยอมให้มี Drift ได้ไม่เกิน 20 Features (จาก 57) ถึงจะแจ้งเตือน
+    # 6. Run Evidently
     data_drift_tests = TestSuite(tests=[
         TestNumberOfDriftedColumns(lt=20) 
     ])
@@ -162,12 +163,12 @@ def monitor_drift():
     data_drift_tests.save_html(report_path)
     print(f"✅ Drift Report saved: {report_path}")
     
-    # 7. Evaluate Result
+    # 7. Result
     result = data_drift_tests.as_dict()
     try:
         is_drift = not result["tests"][0]["parameters"]["condition"]["pass"]
         drifted_count = result["tests"][0]["parameters"]["value"]
-        print(f"📊 Drifted Features: {drifted_count} (Threshold < 20 to Pass)")
+        print(f"📊 Drifted Features: {drifted_count}")
     except Exception as e:
         print(f"⚠️ Error parsing result: {e}")
         is_drift = True

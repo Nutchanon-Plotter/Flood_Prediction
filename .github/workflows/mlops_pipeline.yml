@@ -81,7 +81,7 @@ jobs:
         git add -f models/*
         
         # 2. Add ผลลัพธ์ JSON (ในโฟลเดอร์ predict_result ตามโค้ดใหม่)
-        git add modles/prediction_results.json
+        git add models/prediction_results.json
         git add webdev/fontend/public/prediction_results.json
         
         # 3. Add ข้อมูลดิบ (เก็บ History)

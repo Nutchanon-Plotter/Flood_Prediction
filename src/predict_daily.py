@@ -283,10 +283,13 @@ if __name__ == '__main__':
             json.dump(results, f, indent=4)
         print(f"✅ Prediction saved to: {output_path_1}")
 
+# ... (โค้ดส่วนบนเหมือนเดิม) ...
+
         # ========================================================
-        # 💾 SAVE 2: Save to webdev/fontend/public/ (Frontend)
+        # 💾 SAVE 2: Save to Frontend Public Folder (Correct Path)
         # ========================================================
-        output_dir_2 = os.path.join(project_root, "webdev", "fontend", "public")
+        # แก้จาก 'webdev/fontend' เป็น 'web/frontend' ให้ตรงกับโฟลเดอร์จริง
+        output_dir_2 = os.path.join(project_root, "web", "frontend", "public")
         os.makedirs(output_dir_2, exist_ok=True)
         output_path_2 = os.path.join(output_dir_2, "prediction_results.json")
         

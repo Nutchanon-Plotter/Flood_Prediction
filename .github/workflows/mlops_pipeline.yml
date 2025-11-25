@@ -72,23 +72,25 @@ jobs:
         python src/predict_daily.py
 
     # 7. Save & Commit Results
+# ... (ส่วนก่อนหน้า) ...
+
+    # 7. Save & Commit Results
     - name: 6. Commit and Push Updates
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         
-        # 1. Add ไฟล์โมเดล (บังคับ Add ด้วย -f)
+        # 1. Add ไฟล์โมเดล
         git add -f models/*
         
-        # 2. Add ผลลัพธ์ JSON (ในโฟลเดอร์ predict_result ตามโค้ดใหม่)
+        # 2. Add ผลลัพธ์ JSON (ทั้ง 2 ที่)
         git add predict_result/prediction_results.json
-        git add webdev/fontend/public/prediction_results.json
         
-        # 3. Add ข้อมูลดิบ (เก็บ History)
+        # --- แก้บรรทัดนี้ให้ path ตรงกับของจริง ---
+        git add web/frontend/public/prediction_results.json
+        
+        # 3. Add ข้อมูลดิบ
         git add data/raw/raw_data.csv
-        
-        # เช็คสถานะ (Debug)
-        git status
         
         # Commit และ Push
         git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Pipeline Output [skip ci]" && git push)

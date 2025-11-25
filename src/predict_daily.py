@@ -20,8 +20,11 @@ warnings.filterwarnings("ignore")
 # 1. CONFIGURATION
 # --------------------------------------------------------------------------------
 
+# ระบุเป้าหมายหลักที่จะทำนาย
+TARGET_LOCATION_NAME = "ChaoPhraya_Dam"
+
 LOCATIONS = [
-    {"name": "ChaoPhraya_Dam", "lat": 15.159213709346405, "lon": 100.17985248529882}, 
+    {"name": TARGET_LOCATION_NAME, "lat": 15.159213709346405, "lon": 100.17985248529882}, 
     {"name": "NakhonSawan_Muang_Upstream", "lat": 15.700409309316225, "lon": 100.14120663110944},
 ]
 
@@ -131,7 +134,7 @@ def run_preprocess(df):
     if 'wind_direction_10m_dominant' in df.columns:
         df['winddirection_10m_dominant'] = df['wind_direction_10m_dominant']
 
-    df_target = df[df['location'] == 'ChaoPhraya_Dam'].copy()
+    df_target = df[df['location'] == TARGET_LOCATION_NAME].copy()
     df_upstream = df[df['location'] == 'NakhonSawan_Muang_Upstream'].copy()
 
     lag_features = ['river_discharge']
@@ -223,15 +226,12 @@ if __name__ == '__main__':
     if not df_forecast.empty:
         print(f"📊 Aligning features with scaler ({len(EXPECTED_FEATURES)} features)...")
         
-        # FORCE ALIGNMENT
         df_aligned = df_forecast.reindex(columns=EXPECTED_FEATURES, fill_value=0)
         df_aligned = df_aligned.fillna(0)
         
-        # SCALE
         X_scaled_all = scaler.transform(df_aligned)
         X_scaled_df = pd.DataFrame(X_scaled_all, columns=EXPECTED_FEATURES)
         
-        # SELECT MODEL FEATURES
         required_features = []
         if model_type == "XGBoost":
             try: required_features = model.get_booster().feature_names
@@ -263,6 +263,7 @@ if __name__ == '__main__':
         for date, pred, prob in zip(df_forecast.index, predictions, flood_probs):
             results.append({
                 "date": date.strftime('%Y-%m-%d'),
+                "location": TARGET_LOCATION_NAME, # <--- [เพิ่ม] ระบุชื่อสถานที่
                 "status_code": int(pred),
                 "status_text": status_map.get(int(pred), "Unknown"),
                 "flood_probability": float(prob),
@@ -272,30 +273,19 @@ if __name__ == '__main__':
         base_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(base_dir)
         
-        # ========================================================
-        # 💾 SAVE 1: Save to predict_result/ (Standard)
-        # ========================================================
+        # SAVE 1: predict_result/
         output_dir_1 = os.path.join(project_root, "predict_result")
         os.makedirs(output_dir_1, exist_ok=True)
         output_path_1 = os.path.join(output_dir_1, "prediction_results.json")
-        
-        with open(output_path_1, "w") as f:
-            json.dump(results, f, indent=4)
-        print(f"✅ Prediction saved to: {output_path_1}")
+        with open(output_path_1, "w") as f: json.dump(results, f, indent=4)
+        print(f"✅ Saved: {output_path_1}")
 
-# ... (โค้ดส่วนบนเหมือนเดิม) ...
-
-        # ========================================================
-        # 💾 SAVE 2: Save to Frontend Public Folder (Correct Path)
-        # ========================================================
-        # แก้จาก 'webdev/fontend' เป็น 'web/frontend' ให้ตรงกับโฟลเดอร์จริง
+        # SAVE 2: web/frontend/public/
         output_dir_2 = os.path.join(project_root, "web", "frontend", "public")
         os.makedirs(output_dir_2, exist_ok=True)
         output_path_2 = os.path.join(output_dir_2, "prediction_results.json")
-        
-        with open(output_path_2, "w") as f:
-            json.dump(results, f, indent=4)
-        print(f"✅ Prediction saved to: {output_path_2}")
+        with open(output_path_2, "w") as f: json.dump(results, f, indent=4)
+        print(f"✅ Saved: {output_path_2}")
 
         print(json.dumps(results, indent=2))
 

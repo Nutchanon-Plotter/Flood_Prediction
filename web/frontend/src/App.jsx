@@ -20,14 +20,10 @@ function formatFullDate(dateStr) {
 
 const getRiskIcon = (risk) => {
   switch (risk) {
-    case "Low":
-      return "💧";
-    case "Medium":
-      return "🌊";
-    case "High":
-      return "🚨🌊";
-    default:
-      return "⚪";
+    case "Low": return "💧";
+    case "Medium": return "🌊";
+    case "High": return "🚨🌊";
+    default: return "⚪";
   }
 };
 
@@ -84,13 +80,13 @@ export default function App() {
         fontFamily: "'Montserrat', 'Roboto', sans-serif",
       }}
     >
-      {/* Clouds */}
-      <img src={cloud} className="cloud c1" />
-      <img src={cloud} className="cloud c2" />
-      <img src={cloud} className="cloud c3" />
-      <img src={cloud} className="cloud-r r1" />
-      <img src={cloud} className="cloud-r r2" />
-      <img src={cloud} className="cloud-r r3" />
+      {/* Clouds Background */}
+      <img src={cloud} className="cloud c1" alt="" />
+      <img src={cloud} className="cloud c2" alt="" />
+      <img src={cloud} className="cloud c3" alt="" />
+      <img src={cloud} className="cloud-r r1" alt="" />
+      <img src={cloud} className="cloud-r r2" alt="" />
+      <img src={cloud} className="cloud-r r3" alt="" />
 
       {/* Today Box */}
       <div
@@ -105,20 +101,40 @@ export default function App() {
           textShadow: "1px 1px 4px rgba(0,0,0,0.7)",
         }}
       >
+        {/* --- 1. ส่วน Location --- */}
+        <div style={{ 
+            fontSize: "1.2rem", 
+            opacity: 0.9, 
+            fontWeight: "600", 
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+            marginBottom: "5px"
+        }}>
+          📍 {todayData.location || "Chao Phraya Dam"} 
+        </div>
+
         <div style={{ fontSize: "1.5rem", opacity: 0.85, fontWeight: "500" }}>Today</div>
-        <h1 style={{ fontSize: "3rem", fontWeight: "700" }}>
+        
+        <h1 style={{ fontSize: "3rem", fontWeight: "700", margin: "10px 0" }}>
           {todayData.fullDate}
         </h1>
-        <div style={{ fontSize: "1.8rem", marginTop: "10px", fontWeight: "500" }}>
+        
+        <div style={{ fontSize: "1.8rem", fontWeight: "500" }}>
           {todayData.status_text}
         </div>
+        
         <div style={{ fontSize: "5rem", margin: "1rem 0" }}>
           {getRiskIcon(todayData.risk_level)}
         </div>
+
+        {/* --- 2. ส่วน Flood Probability --- */}
         <div style={{ fontSize: "1.3rem", fontWeight: "500" }}>
-          Probability: {todayData.flood_probability.toFixed(2)}
+          Flood Probability : {todayData.flood_probability.toFixed(2)} %
         </div>
-        <div style={{ fontWeight: "600" }}>Risk: {todayData.risk_level}</div>
+        
+        <div style={{ fontWeight: "600", marginTop: "5px", fontSize: "1.1rem" }}>
+          Risk Level: {todayData.risk_level}
+        </div>
       </div>
 
       {/* Forecast List */}
@@ -145,14 +161,23 @@ export default function App() {
                   : "none",
               color: "white",
               fontWeight: "bold",
-              fontSize: "1.2rem",
+              fontSize: "1.1rem", // ปรับขนาดตัวอักษรให้พอดีมือถือ
             }}
           >
-            <div style={{ flex: 2, textAlign: "left" }}>{day.fullDate}</div>
+            <div style={{ flex: 2, textAlign: "left" }}>
+                <div>{day.fullDate}</div>
+                <div style={{ fontSize: "0.8rem", opacity: 0.8, fontWeight: "normal" }}>
+                    Prob: {day.flood_probability.toFixed(1)}%
+                </div>
+            </div>
+            
             <div style={{ flex: 1, textAlign: "center", fontSize: "1.5rem" }}>
               {getRiskIcon(day.risk_level)}
             </div>
-            <div style={{ flex: 2, textAlign: "right" }}>{day.risk_level} Risk</div>
+            
+            <div style={{ flex: 2, textAlign: "right" }}>
+                {day.risk_level} Risk
+            </div>
           </div>
         ))}
       </div>

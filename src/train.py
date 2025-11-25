@@ -17,7 +17,7 @@ import joblib
 from mlflow.tracking import MlflowClient
 import matplotlib.pyplot as plt
 
-# --- 🛠️ Path Setup ---
+# --- Path Setup ---
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
@@ -30,9 +30,9 @@ def calculate_multiclass_weights():
     data_path = get_path('data', 'preprocess_data', 'y_train.csv')
     try:
         y_train = pd.read_csv(data_path, index_col=0).squeeze()
-        print(f"✅ download y_train.csv success")
+        print(f" download y_train.csv success")
     except FileNotFoundError:
-        print(f"❌ Error:  y_train.csv not found at {data_path}")
+        print(f" Error:  y_train.csv not found at {data_path}")
         exit(1)
 
     classes = np.unique(y_train)
@@ -49,7 +49,7 @@ def feature_selection():
         y_train = pd.read_csv(y_path, index_col=0).squeeze()
         X_train_scaled_df = pd.read_csv(X_path, index_col=0)
     except FileNotFoundError:
-        print("❌ Error: ไม่พบไฟล์ข้อมูลสำหรับ Feature Selection")
+        print("Error: ไม่พบไฟล์ข้อมูลสำหรับ Feature Selection")
         return []
 
     multiclass_weights = calculate_multiclass_weights()
@@ -64,7 +64,7 @@ def feature_selection():
         "Importance": importances
     }).sort_values(by="Importance", ascending=False)
     
-    print("\n📊 Top Feature Importances:")
+    print("\nTop Feature Importances:")
     print(importance_df.head(10))
 
     K = 10
@@ -83,14 +83,14 @@ def Load_processed_data():
         X_train = X_train_scale[selected_features]
         X_test = X_test_scale[selected_features]
     else:
-        print("⚠️ Warning: Feature selection failed, using all features.")
+        print("Warning: Feature selection failed, using all features.")
         X_train = X_train_scale
         X_test = X_test_scale
         
     return X_train, X_test, y_train, y_test
 
 def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_test, y_test, sample_weights):
-    print(f"\n--- 🧠 Starting Grid Search Tuning for: {model_name} ---")
+    print(f"\n--- Starting Grid Search Tuning for: {model_name} ---")
 
     models_dir = get_path("models")
     os.makedirs(models_dir, exist_ok=True)
@@ -116,9 +116,9 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
     overall_metrics = report['weighted avg']
     accuracy = report.get('accuracy', accuracy_score(y_test, y_pred))
 
-    print(f"✅ Best Params: {best_params}")
-    print(f"✅ Test F1 (Weighted): {f1_weighted:.4f}")
-    print(f"✅ Test Accuracy: {accuracy:.4f}")
+    print(f"Best Params: {best_params}")
+    print(f"Test F1 (Weighted): {f1_weighted:.4f}")
+    print(f"Test Accuracy: {accuracy:.4f}")
     
     with mlflow.start_run(run_name=f"GridSearch_{model_name}", nested=True) as run:
         mlflow.log_params(best_params)
@@ -148,9 +148,9 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
             
             mlflow.log_figure(fig, "confusion_matrix.png")
             plt.close(fig) # Close the figure to free up memory
-            print(f"📸 Logged confusion_matrix.png to MLflow.")
+            print(f"Logged confusion_matrix.png to MLflow.")
         except Exception as e:
-            print(f"❌ Could not generate/log confusion matrix: {e}")
+            print(f"Could not generate/log confusion matrix: {e}")
 
         if model_name == "XGBoost":
             mlflow.xgboost.log_model(best_model, "model")
@@ -163,7 +163,7 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
         else:
              joblib.dump(best_model, f"{model_filename}.pkl")
 
-        print(f"💾 Model saved locally to: {model_filename}")
+        print(f"Model saved locally to: {model_filename}")
         
     return run.info.run_id, f1_weighted, model_name
 
@@ -194,17 +194,17 @@ def train():
     xgb_params = { 'n_estimators': [100, 200], 'max_depth': [3, 5], 'learning_rate': [0.01, 0.1], 'reg_lambda': [0.1, 1] }
     xgb_model_base = XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42, objective='multi:softprob', num_class=num_classes)
 
-    # 4. MLflow Setup (ใช้ Env Vars ล้วนๆ)
+    # 4. MLflow Setup
     print("\n=======================================================")
-    print("🚀 Connecting to MLflow (DagsHub) via Secrets")
+    print("Connecting to MLflow (DagsHub) via Secrets")
     print("=======================================================")
     
-    # URL ของ DagsHub MLflow (ไม่ต้องใส่ user/pass ตรงนี้)
+    # URL DagsHub MLflow
     tracking_uri = "https://dagshub.com/plotter.natchanon/Flood_Prediction.mlflow"
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("Flood_Prediction_Project")
     
-    print(f"📡 Tracking URI: {tracking_uri}")
+    print(f"Tracking URI: {tracking_uri}")
     
     results = []
 
@@ -226,7 +226,7 @@ def train():
         best_name = best_model_result['name']
         best_run_id = best_model_result['run_id']
         
-        print(f"\n🏆 BEST MODEL: {best_name} (F1: {best_f1:.4f})")
+        print(f"\nBEST MODEL: {best_name} (F1: {best_f1:.4f})")
 
         models_dir = get_path("models")
         source_ext = "json" if best_name == "XGBoost" else "pkl"
@@ -237,22 +237,22 @@ def train():
             shutil.copy(source_path, target_path)
             with open(os.path.join(models_dir, "model_metadata.txt"), "w") as f: f.write(best_name)
             with open(os.path.join(models_dir, "model_filename.txt"), "w") as f: f.write(f"production_model.{source_ext}")
-            print(f"✅ Production model saved to: {target_path}")
+            print(f"Production model saved to: {target_path}")
         else:
-            print(f"⚠️ Error: Source model file not found: {source_path}")
+            print(f"Error: Source model file not found: {source_path}")
 
         # 6. Promotion
         PROMOTION_THRESHOLD = 0.80
         if best_f1 >= PROMOTION_THRESHOLD:
             mlflow.log_metric("best_f1_weighted_overall", best_f1)
             mlflow.set_tag("best_model_name", best_name)
-            print(f"✅ Promoting {best_name} to Production...")
+            print(f"Promoting {best_name} to Production...")
             
             mv = mlflow.register_model(f"runs:/{best_run_id}/model", "Flood_Model_Prod")
             MlflowClient().transition_model_version_stage(name="Flood_Model_Prod", version=mv.version, stage="Production", archive_existing_versions=True)
-            print(f"🎉 Promotion Complete! Version: {mv.version}")
+            print(f"Promotion Complete! Version: {mv.version}")
         else:
-            print(f"❌ Skipping Promotion (Score {best_f1:.4f} < {PROMOTION_THRESHOLD})")
+            print(f"Skipping Promotion (Score {best_f1:.4f} < {PROMOTION_THRESHOLD})")
 
 if __name__ == "__main__":
     train()

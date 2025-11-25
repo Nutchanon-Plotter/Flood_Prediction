@@ -2,7 +2,7 @@ name: Smart Flood MLOps Pipeline
 
 on:
   schedule:
-    - cron: '0 0 * * *' # รันทุกเที่ยงคืน (UTC) หรือ 7 โมงเช้าไทย
+    - cron: '0 0 * * *' # รันทุกเที่ยงคืน UTC (07:00 น. เวลาไทย)
   workflow_dispatch:    # ปุ่มกดรันเอง (Manual Trigger)
 
 permissions:
@@ -22,45 +22,73 @@ jobs:
       with:
         python-version: '3.9'
 
+    # 2. ติดตั้ง Library (ตามที่ขอ)
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # ระบุ mlflow version ที่เข้ากันได้กับ DagsHub
-        pip install pandas numpy scikit-learn xgboost mlflow==2.17.2 joblib evidently openmeteo-requests requests-cache retry-requests dagshub
+        
+        # 1. ลงจาก requirements.txt (ถ้ามี)
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        
+        # 2. ลง Evidently 0.4.30 แยกตามที่ขอ (และ Fix MLflow/PyArrow กันเหนียว)
+        pip install "evidently==0.4.30" "mlflow==2.17.2" "pyarrow>=14.0.0"
+        
+        # 3. ลง Library อื่นๆ ที่จำเป็น (เผื่อใน requirements.txt ขาด)
+        pip install pandas numpy scikit-learn xgboost joblib openmeteo-requests requests-cache retry-requests dagshub
 
-    # 2. Data Pipeline (ต้องรันเรียงลำดับ)
-    
+        echo "=== 📦 Installed Packages List ==="
+        pip list
+        echo "=================================="
+
+    # 3. Data Pipeline (ต้องรันเรียงลำดับ)
     - name: 1. Fetch Latest Data
       run: python src/data_loader.py
 
     - name: 2. Preprocess & Generate Scaler
-      # สำคัญมาก! ต้องรันเพื่อสร้าง models/scaler.pkl ให้ขั้นตอนต่อไปใช้
+      # สร้าง scaler.pkl ใหม่ทุกครั้งเพื่อให้ version ตรงกับ environment
       run: python src/preprocess.py
 
-    # 5. Prediction (ทำเสมอ ไม่ว่า Drift หรือไม่)
+    # 4. Monitoring
+    - name: 3. Check for Data Drift
+      id: drift_check
+      run: python src/monitor.py
+
+    # 5. Retraining (ทำเฉพาะตอนเจอ Drift)
+    - name: 4. 🚨 Drift Detected - Retraining Model
+      if: steps.drift_check.outputs.drift_detected == 'true'
+      env: 
+        # ส่ง Secret ให้ DagsHub/MLflow
+        DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+      run: |
+        echo "Data has drifted. Retraining the model..."
+        python src/train.py
+
+    # 6. Prediction (ทำเสมอ ไม่ว่า Drift หรือไม่)
     - name: 5. 🔮 Run Prediction for Web
-      # ไม่ใส่เงื่อนไข if เพื่อให้รันทุกครั้ง
       run: |
         echo "Running inference using the production model..."
         python src/predict_daily.py
 
-    # 6. Save & Commit Results
+    # 7. Save & Commit Results
     - name: 6. Commit and Push Updates
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         
-        # 1. Add ไฟล์โมเดล (บังคับ Add ด้วย -f เผื่อติด gitignore)
+        # 1. Add ไฟล์โมเดล (บังคับ Add ด้วย -f)
         git add -f models/*
         
-        # 2. Add ผลลัพธ์ JSON สำหรับเว็บ
-        git add prediction_results.json
+        # 2. Add ผลลัพธ์ JSON (ในโฟลเดอร์ predict_result ตามโค้ดใหม่)
+        git add modles/prediction_results.json
+        git add webdev/fontend/public/prediction_results.json
         
-        # 3. Add ข้อมูลดิบ (Optional: ถ้าอยากเก็บ History)
+        # 3. Add ข้อมูลดิบ (เก็บ History)
         git add data/raw/raw_data.csv
         
         # เช็คสถานะ (Debug)
         git status
         
-        # Commit และ Push (ถ้าไม่มีอะไรเปลี่ยนก็ข้ามไป ไม่ error)
+        # Commit และ Push
         git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Pipeline Output [skip ci]" && git push)

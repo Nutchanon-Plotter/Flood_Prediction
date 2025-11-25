@@ -3,7 +3,7 @@ numpy
 scikit-learn
 xgboost
 mlflow==2.17.2
-evidently>=0.4.0
+evidently>=0.4.30
 fastapi
 uvicorn
 openmeteo-requests

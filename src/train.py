@@ -3,19 +3,19 @@ import mlflow
 import mlflow.xgboost
 import mlflow.sklearn
 import xgboost as xgb
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import accuracy_score, classification_report, f1_score, confusion_matrix, ConfusionMatrixDisplay
 import pandas as pd
 import os
 import numpy as np
 import shutil
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 import joblib
 from mlflow.tracking import MlflowClient
+import matplotlib.pyplot as plt
 
 # --- 🛠️ Path Setup ---
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,16 +30,15 @@ def calculate_multiclass_weights():
     data_path = get_path('data', 'preprocess_data', 'y_train.csv')
     try:
         y_train = pd.read_csv(data_path, index_col=0).squeeze()
-        print(f"✅ โหลดไฟล์ y_train.csv สำเร็จ")
+        print(f"✅ download y_train.csv success")
     except FileNotFoundError:
-        print(f"❌ Error: ไม่พบไฟล์ y_train.csv ที่ {data_path}")
+        print(f"❌ Error:  y_train.csv not found at {data_path}")
         exit(1)
 
     classes = np.unique(y_train)
     weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
     multiclass_weights = dict(zip(classes, weights))
     
-    # print debug info...
     return multiclass_weights
 
 def feature_selection():
@@ -113,18 +112,45 @@ def tune_train_evaluate_mlflow(model, params, model_name, X_train, y_train, X_te
     y_pred = best_model.predict(X_test)
     f1_weighted = f1_score(y_test, y_pred, average='weighted')
     report = classification_report(y_test, y_pred, output_dict=True)
+    cm = confusion_matrix(y_test, y_pred, labels=np.unique(y_test))
+    overall_metrics = report['weighted avg']
+    accuracy = report.get('accuracy', accuracy_score(y_test, y_pred))
 
     print(f"✅ Best Params: {best_params}")
     print(f"✅ Test F1 (Weighted): {f1_weighted:.4f}")
+    print(f"✅ Test Accuracy: {accuracy:.4f}")
     
     with mlflow.start_run(run_name=f"GridSearch_{model_name}", nested=True) as run:
         mlflow.log_params(best_params)
         mlflow.log_metric("cv_f1_weighted", best_cv_score)
         mlflow.log_metric("test_f1_weighted", f1_weighted)
+        mlflow.log_metric("test_accuracy", accuracy)
+        mlflow.log_metric("test_f1_weighted", f1_weighted)
+        mlflow.log_metric("test_precision_weighted", overall_metrics['precision'])
+        mlflow.log_metric("test_recall_weighted", overall_metrics['recall'])
         
         for cls, metrics in report.items():
             if isinstance(metrics, dict) and 'f1-score' in metrics:
                 mlflow.log_metric(f"test_{cls}_f1_score", metrics['f1-score'])
+                mlflow.log_metric(f"test_{cls}_precision", metrics['precision'])
+                mlflow.log_metric(f"test_{cls}_recall", metrics['recall'])
+
+        try:
+            # Use unique labels from y_test for display
+            labels = np.unique(y_test)
+            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+            
+            # Create plot and save it to MLflow
+            fig, ax = plt.subplots(figsize=(10, 8))
+            disp.plot(cmap=plt.cm.Blues, ax=ax, values_format='d')
+            plt.title(f"Confusion Matrix for {model_name}")
+            plt.tight_layout()
+            
+            mlflow.log_figure(fig, "confusion_matrix.png")
+            plt.close(fig) # Close the figure to free up memory
+            print(f"📸 Logged confusion_matrix.png to MLflow.")
+        except Exception as e:
+            print(f"❌ Could not generate/log confusion matrix: {e}")
 
         if model_name == "XGBoost":
             mlflow.xgboost.log_model(best_model, "model")

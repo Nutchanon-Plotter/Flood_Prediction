@@ -184,14 +184,14 @@ def train():
     sample_weights_array = y_train.map(multiclass_weights).values
 
     # 3. Define Models & Params
-    lr_params = { 'C': [1, 10], 'solver': ['lbfgs'] }
+    lr_params = { 'C': [0.1, 1, 10], 'solver': ['lbfgs'] }
     lr_model_base = LogisticRegression(multi_class='multinomial', random_state=42, max_iter=1000, class_weight='balanced')
     
-    rf_params = { 'n_estimators': [100], 'max_depth': [10, None] }
+    rf_params = { 'n_estimators': [100, 200], 'max_depth': [5, 10, None],  'min_samples_split': [2, 5] }
     rf_model_base = RandomForestClassifier(random_state=42, n_jobs=-1, class_weight='balanced')
     
     num_classes = len(np.unique(y_train))
-    xgb_params = { 'n_estimators': [100], 'max_depth': [3, 5], 'learning_rate': [0.1] }
+    xgb_params = { 'n_estimators': [100, 200], 'max_depth': [3, 5], 'learning_rate': [0.01, 0.1], 'reg_lambda': [0.1, 1] }
     xgb_model_base = XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42, objective='multi:softprob', num_class=num_classes)
 
     # 4. MLflow Setup (ใช้ Env Vars ล้วนๆ)

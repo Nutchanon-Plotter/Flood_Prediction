@@ -1,100 +1,80 @@
-# Flood Prediction MLOps System
+# 🌊 FloodOps: End-to-End MLOps Flood Prediction System
 
-โปรเจกต์นี้เป็นส่วนหนึ่งของรายวิชา **CPE393 Machine Learning Operations**
-พัฒนาระบบทำนายความเสี่ยงน้ำท่วมแบบ End-to-End MLOps Pipeline ที่ครอบคลุมตั้งแต่การดึงข้อมูล, การตรวจสอบ Data Drift, การเทรนโมเดลอัตโนมัติ (Retraining), ไปจนถึงการ Deploy ขึ้นเว็บแอปพลิเคชัน
-
----
-
-## Project Overview
-
-ระบบนี้ทำหน้าที่พยากรณ์ความเสี่ยงน้ำท่วมล่วงหน้า 7 วัน โดยใช้ข้อมูลสภาพอากาศและระดับน้ำจาก **Open-Meteo API** ระบบถูกออกแบบให้ทำงานอัตโนมัติผ่าน **GitHub Actions** เพื่อรองรับการเปลี่ยนแปลงของข้อมูล (Data Drift) และรักษาประสิทธิภาพของโมเดลให้ทันสมัยอยู่เสมอ 
-
-### Key Features
-* **Automated Pipeline:** ทำงานอัตโนมัติทุกวัน (Daily Scheduled) ผ่าน GitHub Actions
-* **Drift Detection:** ตรวจสอบความผิดปกติของข้อมูลด้วย **Evidently AI** 
-* **Auto-Retraining:** เทรนโมเดลใหม่ทันทีหากพบ Data Drift
-* **Experiment Tracking:** บันทึกผลการทดลองและโมเดลผ่าน **MLflow** บน **DagsHub**
-* **Bias Mitigation:** ลดความลำเอียงของโมเดลด้วยเทคนิค Class Weighting และ Threshold Adjustment
-* **Deployment:** ให้บริการโมเดลผ่าน **FastAPI** (REST API) และหน้าเว็บ Frontend อย่างง่าย 
+**FloodOps** is an automated machine learning pipeline designed to predict flood risks in the Chao Phraya River basin 7 days in advance. The system implements a complete **MLOps lifecycle**, featuring automated data ingestion, drift detection, self-healing retraining loops, and continuous deployment to a web frontend.
 
 ---
 
-## 🛠️ Tech Stack
+## 📋 Project Overview
 
-* **Language:** Python 3.9
-* **Machine Learning:** XGBoost, Scikit-learn
-* **MLOps Tools:** MLflow, DagsHub, Evidently AI, GitHub Actions [cite: 11]
-* **API & Web:** FastAPI, HTML/JS
-* **Containerization:** Docker
-* **Data Source:** Open-Meteo API (Flood & Weather Archive)
+Traditional static models suffer from "Model Decay" as weather patterns change. FloodOps solves this by:
+1.  **Fetching live data** daily from Open-Meteo API.
+2.  **Monitoring data quality** using Evidently AI to detect distributional shifts (Data Drift).
+3.  **Automatically retraining** the model only when significant drift occurs.
+4.  **Deploying results** to a React frontend via automated Git workflows.
+
+---
+
+## 🏗️ System Architecture
+
+The entire pipeline is orchestrated by **GitHub Actions**, running daily at midnight (UTC).
+![MLOps Architecture Diagram](docs/architec.png)
+## ✨ Key Features
+
+### 1. Intelligent Monitoring (Drift Detection)
+Instead of simple rule-based checks, we use **Evidently AI** to compare the distribution of new data against the training baseline.
+* **Relaxed Threshold:** Implements a dynamic threshold to accept seasonal drift, preventing false alarms.
+* **Smart Imputation:** Automatically fills missing data with "Monthly Mean" values to maintain data integrity.
+
+### 2. Automated Retraining Pipeline
+When significant drift is detected, the system triggers `src/train.py` to execute a full training suite:
+* **Feature Selection:** Automatically identifies and selects the top 10 most important features.
+* **Hyperparameter Tuning:** Runs Grid Search across XGBoost, Random Forest, and Logistic Regression.
+* **Auto-Promotion:** Evaluates models based on F1-Score and automatically promotes the winner to production.
+
+### 3. Data Versioning & Traceability
+* **Git Tagging:** Every data update triggers an automated Git Tag (e.g., `data-v20251125`).
+* **GitHub Releases:** Raw data files (`raw_data.csv`) are automatically attached to releases, creating a permanent, downloadable history of the dataset.
 
 ---
 
 ## 📂 Project Structure
 
 ```text
-CPE393_Final_Project/
+Flood_Prediction/
 │
-├── .github/workflows/
-│   └── mlops_pipeline.yml   # GitHub Actions Workflow (Drift Check -> Retrain -> Predict)
+├── .github/workflows/   # GitHub Actions (Automation Logic)
+│   └── smart_pipeline.yml
 │
-├── data/                    # Data storage (Ignored by Git)
-├── models/                  # Artifacts (model.json, scaler.pkl, drift_reports)
+├── data/
+│   ├── raw/             # Raw historical weather data (Versioned)
+│   └── preprocess_data/ # Processed data ready for training
 │
-├── notebooks/
-│   └── bias_analysis.ipynb  # EDA & Bias Analysis Report
+├── models/              # Model Artifacts
+│   ├── production_model.json  # The active model used for inference
+│   ├── scaler.pkl             # Standard Scaler for data normalization
+│   └── drift_report.html      # Latest visual data drift report
 │
-├── src/
-│   ├── data_loader.py       # Fetch data from API
-│   ├── preprocess.py        # Feature Engineering & Scaling
-│   ├── train.py             # Model Training & MLflow Logging
-│   ├── monitor.py           # Data Drift Detection (Evidently)
-│   └── predict_daily.py     # Generate 7-day forecast JSON
+├── src/                 # Source Code
+│   ├── data_loader.py   # Fetches data from Open-Meteo API with Retry logic
+│   ├── preprocess.py    # Cleans data, generates features, and creates scaler
+│   ├── monitor.py       # Checks for Data Drift using Evidently AI
+│   ├── train.py         # Trains, tunes, and registers the best model
+│   └── predict_daily.py # Generates 7-day forecast JSON
 │
-├── web/
-│   └── index.html           # Frontend Interface
-│
-├── requirements.txt         # Python Dependencies
-└── README.md                # Project Documentation
+├── predict_result/      # JSON Output storage
+├── web/frontend/        # React Frontend Application
+└── requirements.txt     # Python Dependencies
 ```
+# 📊 Monitoring & Results
+- **Prediction Output**: The system generates prediction_results.json containing flood probabilities and risk levels for the next 7 days.
 
-## MLOps Pipeline Automation (GitHub Actions)
-ระบบถูกตั้งค่าให้รันอัตโนมัติ ทุกวันเวลา 00:00 (UTC) หรือเมื่อมีการ Push Code ผ่านไฟล์ .github/workflows/smart_pipeline.yml โดยมี Logic ดังนี้:
+- **Drift Report**: A visual HTML report (drift_report.html) is generated daily to visualize how feature distributions change over time.
 
-* Fetch Data: ดึงข้อมูลน้ำและอากาศล่าสุด
+- **Experiment Logs**: Track training metrics (F1-Score, Accuracy, Parameters) directly on DagsHub.
 
-
-* Drift Check: ใช้ Evidently AI เปรียบเทียบข้อมูลใหม่กับ Reference Data 
-```
-Conditional Logic:
-
-🚨 ถ้าเจอ Drift: ระบบจะรัน train.py เพื่อ Retrain โมเดลใหม่โดยอัตโนมัติ
-
-✅ ถ้าไม่เจอ Drift: ข้ามขั้นตอนเทรน ไปขั้นตอนทำนายทันที
-```
-* Prediction: สร้างไฟล์ prediction_results.json สำหรับ 7 วันข้างหน้า
-
-* Deployment: อัปเดตผลการทำนายและโมเดลล่าสุดกลับเข้าสู่ GitHub Repo เพื่อให้หน้าเว็บดึงไปแสดงผล
-
-## Monitoring & Observability
-
-* Model Performance: ตรวจสอบค่า Accuracy, Loss, และ Parameters ได้ที่ 
- https://dagshub.com/plotter.natchanon/Loan_Defualt_Prediction.mlflow/ 
-
-* Data Drift Report: ไฟล์ HTML report จะถูกสร้างขึ้นทุกครั้งที่มีการรัน Pipeline เก็บไว้ในโฟลเดอร์ ```models/drift_report.html```
-
-
-👥 Team Members
-
-CPE393 Final Project Group 
-
-Student ID - Name (Role: Data Pipeline/Data Scientist) 
-
-Student ID - Name (Role: ML Engineer/Model Training) 
-
-Student ID - Name (Role: ML Infra/Deployment) 
-
-Student ID - Name (Role: ML Infra/Deployment) 
-
-
-**King Mongkut's University of Technology Thonburi**
+# 👥 Contributors
+## CPE393 Machine Learning Operations Project
+- Natchanon Phattamanuruk  65070501018 `Data Pipeline/Scientist`
+- Teerawut Ployjindamanee  65070501031 `ML Deployment`
+- Napat Sinjindawong  65070501074 `ML Engineer/Model Training`
+- Nutchanon Boonyato 65070501075 `MLOps/DevOps Engineer`

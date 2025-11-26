@@ -2,9 +2,9 @@ name: Smart Flood MLOps Pipeline
 
 on:
   schedule:
-    - cron: '0 0 * * *' # รันทุกเที่ยงคืน UTC (07:00 น. เวลาไทย)
-  workflow_dispatch:    # ปุ่มกดรันเอง (Manual Trigger)
-
+    # รันตอน 17:04 UTC (ซึ่งตรงกับ 00:04 น. เวลาไทย)
+    - cron: '4 17 * * *' 
+  workflow_dispatch:
 permissions:
   contents: write       # อนุญาตให้ Bot เขียนไฟล์กลับเข้า Repo ได้
 

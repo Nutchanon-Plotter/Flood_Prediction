@@ -12,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.00999380461871624,
+        "flood_probability": 0.0018228504341095686,
         "risk_level": "Low"
     },
     {
@@ -36,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0092014130204916,
+        "flood_probability": 0.011898288503289223,
         "risk_level": "Low"
     },
     {

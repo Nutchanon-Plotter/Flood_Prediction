@@ -1,6 +1,6 @@
 # 🌊 FloodOps: End-to-End MLOps Flood Prediction System
 
-**FloodOps** is an automated machine learning pipeline designed to predict flood risks in the Chao Phraya River basin 7 days in advance. The system implements a complete **MLOps lifecycle**, featuring automated data ingestion, drift detection, self-healing retraining loops, and continuous deployment to a web frontend.
+**FloodOps** is an automated machine learning pipeline designed to predict flood risks in the Chao Phraya River Dam 7 days in advance. The system implements a complete **MLOps lifecycle**, featuring automated data ingestion, drift detection, self-healing retraining loops, and continuous deployment to a web frontend.
 
 ---
 

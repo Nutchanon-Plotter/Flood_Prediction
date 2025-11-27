@@ -78,7 +78,8 @@ jobs:
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         
-        # Add Files
+        # Add 
+        git pull
         git add -f models/*
         git add predict_result/prediction_results.json
         git add web/frontend/public/prediction_results.json

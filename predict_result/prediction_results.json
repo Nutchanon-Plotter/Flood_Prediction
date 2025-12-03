@@ -1,18 +1,10 @@
 [
     {
-        "date": "2025-12-02",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 0.0,
-        "risk_level": "Low"
-    },
-    {
         "date": "2025-12-03",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.0010396968573331833,
         "risk_level": "Low"
     },
     {
@@ -20,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.001117148669436574,
         "risk_level": "Low"
     },
     {
@@ -28,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.0010915833991020918,
         "risk_level": "Low"
     },
     {
@@ -36,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.0011218051658943295,
         "risk_level": "Low"
     },
     {
@@ -44,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.0011665887432172894,
         "risk_level": "Low"
     },
     {
@@ -52,7 +44,15 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0,
+        "flood_probability": 0.009069959633052349,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-12-09",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.012870979495346546,
         "risk_level": "Low"
     }
 ]

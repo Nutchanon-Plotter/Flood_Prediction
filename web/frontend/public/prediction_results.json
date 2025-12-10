@@ -1,13 +1,5 @@
 [
     {
-        "date": "2025-12-09",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 0.0,
-        "risk_level": "Low"
-    },
-    {
         "date": "2025-12-10",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
@@ -49,6 +41,14 @@
     },
     {
         "date": "2025-12-15",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.0,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2025-12-16",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",

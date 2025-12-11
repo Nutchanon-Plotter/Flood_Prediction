@@ -3,7 +3,7 @@ name: Smart Flood MLOps Pipeline
 on:
   schedule:
     # รันตอน 17:04 UTC (ซึ่งตรงกับ 00:04 น. เวลาไทย)
-    - cron: '4 17 * * *' 
+    - cron: '30 0 * * *' 
   workflow_dispatch:
 permissions:
   contents: write       # อนุญาตให้ Bot เขียนไฟล์กลับเข้า Repo ได้

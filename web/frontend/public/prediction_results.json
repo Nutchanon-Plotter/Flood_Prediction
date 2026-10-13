@@ -1,34 +1,26 @@
 [
     {
-        "date": "2026-10-12",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 2,
-        "status_text": "Flood",
-        "flood_probability": 88.7710666727001,
-        "risk_level": "High"
-    },
-    {
         "date": "2026-10-13",
         "location": "ChaoPhraya_Dam",
         "status_code": 2,
         "status_text": "Flood",
-        "flood_probability": 82.50650977614872,
+        "flood_probability": 99.5050048828125,
         "risk_level": "High"
     },
     {
         "date": "2026-10-14",
         "location": "ChaoPhraya_Dam",
-        "status_code": 2,
-        "status_text": "Flood",
-        "flood_probability": 79.25471201266791,
-        "risk_level": "High"
+        "status_code": 1,
+        "status_text": "Risk",
+        "flood_probability": 29.549274444580078,
+        "risk_level": "Medium"
     },
     {
         "date": "2026-10-15",
         "location": "ChaoPhraya_Dam",
         "status_code": 2,
         "status_text": "Flood",
-        "flood_probability": 76.8306993819243,
+        "flood_probability": 79.66815185546875,
         "risk_level": "High"
     },
     {
@@ -36,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 2,
         "status_text": "Flood",
-        "flood_probability": 69.09463419961087,
+        "flood_probability": 69.55875396728516,
         "risk_level": "High"
     },
     {
@@ -44,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 2,
         "status_text": "Flood",
-        "flood_probability": 65.1441726387752,
+        "flood_probability": 82.10375213623047,
         "risk_level": "High"
     },
     {
@@ -52,7 +44,15 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 2,
         "status_text": "Flood",
-        "flood_probability": 73.64948527513917,
+        "flood_probability": 50.42893981933594,
+        "risk_level": "High"
+    },
+    {
+        "date": "2026-10-19",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 2,
+        "status_text": "Flood",
+        "flood_probability": 68.76956939697266,
         "risk_level": "High"
     }
 ]

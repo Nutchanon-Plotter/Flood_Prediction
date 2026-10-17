@@ -1,1 +1,1 @@
-production_model.json
+production_model.pkl

@@ -1,18 +1,10 @@
 [
     {
-        "date": "2026-10-20",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 1,
-        "status_text": "Risk",
-        "flood_probability": 4.5,
-        "risk_level": "Medium"
-    },
-    {
         "date": "2026-10-21",
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 4.5,
+        "flood_probability": 0.2323143184185028,
         "risk_level": "Medium"
     },
     {
@@ -20,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 6.0,
+        "flood_probability": 0.19637924432754517,
         "risk_level": "Medium"
     },
     {
@@ -28,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 5.0,
+        "flood_probability": 0.13193485140800476,
         "risk_level": "Medium"
     },
     {
@@ -36,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 3.5000000000000004,
+        "flood_probability": 0.014699877239763737,
         "risk_level": "Medium"
     },
     {
@@ -44,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 6.5,
+        "flood_probability": 0.016047850251197815,
         "risk_level": "Medium"
     },
     {
@@ -52,7 +44,15 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 3.0,
+        "flood_probability": 0.0877629965543747,
         "risk_level": "Medium"
+    },
+    {
+        "date": "2026-10-27",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.0017953648930415511,
+        "risk_level": "Low"
     }
 ]

@@ -1,1 +1,1 @@
-Random Forest
+Logistic Regression

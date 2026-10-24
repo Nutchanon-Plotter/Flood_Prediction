@@ -1,18 +1,10 @@
 [
     {
-        "date": "2026-10-23",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 1,
-        "status_text": "Risk",
-        "flood_probability": 1.3356544158466352,
-        "risk_level": "Medium"
-    },
-    {
         "date": "2026-10-24",
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 0.797479144140036,
+        "flood_probability": 20.5,
         "risk_level": "Medium"
     },
     {
@@ -20,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 0.2634308627051939,
+        "flood_probability": 13.0,
         "risk_level": "Medium"
     },
     {
@@ -28,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 0.12812400806697036,
+        "flood_probability": 17.5,
         "risk_level": "Medium"
     },
     {
@@ -36,23 +28,31 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 1,
         "status_text": "Risk",
-        "flood_probability": 0.048767298961087946,
+        "flood_probability": 16.5,
         "risk_level": "Medium"
     },
     {
         "date": "2026-10-28",
         "location": "ChaoPhraya_Dam",
-        "status_code": 1,
-        "status_text": "Risk",
-        "flood_probability": 0.02728864678267201,
-        "risk_level": "Medium"
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 6.0,
+        "risk_level": "Low"
     },
     {
         "date": "2026-10-29",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.010728797497519513,
+        "flood_probability": 1.5,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2026-10-30",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 1.0,
         "risk_level": "Low"
     }
 ]

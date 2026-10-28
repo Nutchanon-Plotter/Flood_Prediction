@@ -1,18 +1,10 @@
 [
     {
-        "date": "2026-10-27",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 1,
-        "status_text": "Risk",
-        "flood_probability": 0.07899589091539383,
-        "risk_level": "Medium"
-    },
-    {
         "date": "2026-10-28",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.003980240318924189,
+        "flood_probability": 0.005585386883467436,
         "risk_level": "Low"
     },
     {
@@ -20,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.003115901257842779,
+        "flood_probability": 0.0006695149349980056,
         "risk_level": "Low"
     },
     {
@@ -28,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0015757428482174873,
+        "flood_probability": 0.0007259545964188874,
         "risk_level": "Low"
     },
     {
@@ -36,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.000882035936228931,
+        "flood_probability": 0.0005089897895231843,
         "risk_level": "Low"
     },
     {
@@ -44,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0002444390265736729,
+        "flood_probability": 0.00013565883273258805,
         "risk_level": "Low"
     },
     {
@@ -52,7 +44,15 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.00015226863615680486,
+        "flood_probability": 0.00018032851221505553,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2026-11-03",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.00012122660700697452,
         "risk_level": "Low"
     }
 ]

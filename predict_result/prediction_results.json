@@ -1,26 +1,18 @@
 [
     {
-        "date": "2026-10-28",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 0.005585386883467436,
-        "risk_level": "Low"
-    },
-    {
         "date": "2026-10-29",
         "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 0.0006695149349980056,
-        "risk_level": "Low"
+        "status_code": 1,
+        "status_text": "Risk",
+        "flood_probability": 0.024760839233779964,
+        "risk_level": "Medium"
     },
     {
         "date": "2026-10-30",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0007259545964188874,
+        "flood_probability": 0.005154627526832576,
         "risk_level": "Low"
     },
     {
@@ -28,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.0005089897895231843,
+        "flood_probability": 0.0008509747190969274,
         "risk_level": "Low"
     },
     {
@@ -36,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.00013565883273258805,
+        "flood_probability": 0.00020898272427726015,
         "risk_level": "Low"
     },
     {
@@ -44,7 +36,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.00018032851221505553,
+        "flood_probability": 7.785348411314691e-05,
         "risk_level": "Low"
     },
     {
@@ -52,7 +44,15 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.00012122660700697452,
+        "flood_probability": 3.2420197963238844e-05,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2026-11-04",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 3.8433183514269545e-05,
         "risk_level": "Low"
     }
 ]

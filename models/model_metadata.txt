@@ -1,1 +1,1 @@
-XGBoost
+Logistic Regression

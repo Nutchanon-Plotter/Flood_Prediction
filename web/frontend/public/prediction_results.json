@@ -1,26 +1,10 @@
 [
     {
-        "date": "2026-11-02",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 3.0,
-        "risk_level": "Low"
-    },
-    {
-        "date": "2026-11-03",
-        "location": "ChaoPhraya_Dam",
-        "status_code": 0,
-        "status_text": "Normal",
-        "flood_probability": 2.5,
-        "risk_level": "Low"
-    },
-    {
         "date": "2026-11-04",
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 3.0,
+        "flood_probability": 0.003109544515609741,
         "risk_level": "Low"
     },
     {
@@ -28,7 +12,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 1.5,
+        "flood_probability": 0.0021421900019049644,
         "risk_level": "Low"
     },
     {
@@ -36,7 +20,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 1.5,
+        "flood_probability": 0.0011110411724075675,
         "risk_level": "Low"
     },
     {
@@ -44,7 +28,7 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 0.5,
+        "flood_probability": 0.0006179935880936682,
         "risk_level": "Low"
     },
     {
@@ -52,7 +36,23 @@
         "location": "ChaoPhraya_Dam",
         "status_code": 0,
         "status_text": "Normal",
-        "flood_probability": 1.5,
+        "flood_probability": 0.00043452699901536107,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2026-11-09",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.00024111689708661288,
+        "risk_level": "Low"
+    },
+    {
+        "date": "2026-11-10",
+        "location": "ChaoPhraya_Dam",
+        "status_code": 0,
+        "status_text": "Normal",
+        "flood_probability": 0.0005948243197053671,
         "risk_level": "Low"
     }
 ]
